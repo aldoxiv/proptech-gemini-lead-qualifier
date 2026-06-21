@@ -1,0 +1,6 @@
+{
+  "name": "Assistente Lopes - Qualificação de Leads",
+  "description": "Simulador interativo de assistente virtual para corretores da Lopes qualificarem clientes via WhatsApp de forma leve e rápida, com extração de perfil em tempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
