@@ -41,4 +41,4 @@ Este agente utiliza o modelo **Gemini (Google AI Studio)** estruturado com técn
 ## 👨‍💻 Autor
 Desenvolvido por: **PAES VALMONT [ALDO]** 
 * Associado à Lopes Consultoria Imobiliária.
-* Conecte-se comigo no [LinkedIn](www.linkedin.com/in/paes-valmont).
+* Conecte-se comigo no [Linkedin](https://www.linkedin.com/in/paes-valmont/)
