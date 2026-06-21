@@ -299,7 +299,7 @@ REGRAS DE CONVERSAÇÃO (FUNIL):
 
       // We call Gemini model to generate content
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: contents,
         config: {
           systemInstruction: systemInstruction,
@@ -354,7 +354,7 @@ Instruções para os campos:
 7. "status": Retorne "CONCLUIDO" se a conversa chegou ao fim com a mensagem de encerramento (o assistente informou que o corretor já está assumindo o atendimento) ou se todos os dados necessários foram informados. Caso contrário, retorne "EM_ANDAMENTO".`;
 
       const analysisResponse = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: promptContext,
         config: {
           responseMimeType: "application/json",
