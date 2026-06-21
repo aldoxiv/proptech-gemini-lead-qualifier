@@ -33,6 +33,8 @@ interface LeadProfile {
   urgencia: string | null;
   objetivoInvestimento: string | null;
   ticket: string | null;
+  experiencia: string | null;
+  regiaoEstilo: string | null;
   confirmacaoInteresse: string | null;
   status: "AGUARDANDO_INICIO" | "EM_ANDAMENTO" | "CONCLUIDO";
 }
@@ -47,6 +49,7 @@ export default function App() {
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState<string>("");
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
 
@@ -57,6 +60,8 @@ export default function App() {
     urgencia: null,
     objetivoInvestimento: null,
     ticket: null,
+    experiencia: null,
+    regiaoEstilo: null,
     confirmacaoInteresse: null,
     status: "AGUARDANDO_INICIO"
   });
@@ -106,11 +111,16 @@ export default function App() {
         urgencia: null,
         objetivoInvestimento: null,
         ticket: null,
+        experiencia: null,
+        regiaoEstilo: null,
         confirmacaoInteresse: null,
         status: "AGUARDANDO_INICIO"
       });
+      setIsAnalyzing(false);
       return;
     }
+
+    setIsAnalyzing(true);
 
     const analyzeLead = async () => {
       try {
@@ -128,6 +138,8 @@ export default function App() {
         }
       } catch (err) {
         console.error("Falha ao analisar Lead:", err);
+      } finally {
+        setIsAnalyzing(false);
       }
     };
 
@@ -193,6 +205,8 @@ export default function App() {
       urgencia: null,
       objetivoInvestimento: null,
       ticket: null,
+      experiencia: null,
+      regiaoEstilo: null,
       confirmacaoInteresse: null,
       status: "AGUARDANDO_INICIO"
     });
@@ -220,9 +234,10 @@ export default function App() {
     if (history.length === 0) return 0;
     if (isConcluido) return 100;
     let progress = 20; // Started
-    if (leadProfile.foco) progress += 30; // Chose moradia vs investimento
-    if (leadProfile.dormitorios || leadProfile.objetivoInvestimento) progress += 25; // Answered first level details
-    if (leadProfile.urgencia || leadProfile.ticket || leadProfile.confirmacaoInteresse) progress += 25; // Answered final details
+    if (leadProfile.foco) progress += 20; // Chose moradia vs investimento
+    if (leadProfile.dormitorios || leadProfile.objetivoInvestimento) progress += 20; // Answered Passo I
+    if (leadProfile.experiencia || leadProfile.urgencia) progress += 20; // Answered Passo I extensions
+    if (leadProfile.regiaoEstilo || leadProfile.ticket || leadProfile.confirmacaoInteresse) progress += 15; // Answered Passo II
     return Math.min(progress, 95);
   };
 
@@ -238,12 +253,14 @@ Corretor Responsável: ${agentName}
 Imóvel de Interesse: ${propertyName}
 Região Alvo: ${region}
 
-DADOS QUALIFICADOS DO LEAD:
+DADOS QUALIFICADOS DO LEAD DEEP:
 -------------------------------------------
 - Classificação de Foco: ${leadProfile.foco || "Não definido"}
 ${leadProfile.foco === "MORADIA" ? `  * Dormitórios sugeridos: ${leadProfile.dormitorios || "A definir"}
-  * Urgência de mudança: ${leadProfile.urgencia || "A definir"}` : ""}
+  * Urgência de mudança: ${leadProfile.urgencia || "A definir"}
+  * Região & Estilo de Vida: ${leadProfile.regiaoEstilo || "A definir"}` : ""}
 ${leadProfile.foco === "INVESTIMENTO" ? `  * Objetivo estratégico: ${leadProfile.objetivoInvestimento || "A definir"}
+  * Experiência em investimentos: ${leadProfile.experiencia || "A definir"}
   * Orçamento estimado (Ticket): ${leadProfile.ticket || "A definir"}` : ""}
 ${leadProfile.foco === "NAO_RECORDA" ? `  * Confirmação de interesse futuro: ${leadProfile.confirmacaoInteresse || "Não respondeu"}` : ""}
 
@@ -438,7 +455,7 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
         <section className="lg:col-span-5 flex flex-col items-center" id="simulator-panel">
           
           {/* Smart Phone Container */}
-          <div className="w-full max-w-[390px] aspect-[9/18] bg-black rounded-[40px] p-3 shadow-2xl border-4 border-slate-800 flex flex-col relative overflow-hidden">
+          <div className="w-full max-w-[390px] h-[660px] max-h-[82vh] bg-black rounded-[40px] p-3 shadow-2xl border-4 border-slate-800 flex flex-col relative overflow-hidden shrink-0">
             
             {/* Phone Notch/Speaker */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-50 flex items-center justify-center">
@@ -476,7 +493,9 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
 
                 <div className="flex items-center gap-2.5 text-white">
                   <button
-                    onClick={() => setShowResetConfirm(true)}
+                    onClick={() => {
+                      setShowResetConfirm(true);
+                    }}
                     className="bg-red-600/90 hover:bg-red-700 font-bold text-[9px] uppercase tracking-wider px-2 py-1 rounded transition flex items-center gap-0.5 shadow-xs"
                     title="Sair"
                   >
@@ -581,14 +600,16 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
               )}
 
               {/* Contextual fast-suggestion replies based on chat state */}
-              {history.length > 0 && !isTyping && !isConcluido && (
+              {history.length > 0 && !isTyping && !isAnalyzing && !isConcluido && (
                 <div className="px-3 py-2.5 bg-white border-t border-slate-100 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       💡 Escolha uma das opções abaixo:
                     </span>
                     <button
-                      onClick={() => setShowResetConfirm(true)}
+                      onClick={() => {
+                        setShowResetConfirm(true);
+                      }}
                       className="text-[10px] text-red-500 font-bold hover:underline flex items-center gap-1 transition"
                     >
                       🚪 Encerrar Conversa (Sair)
@@ -610,6 +631,12 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
                         >
                           📈 Investimento
                         </button>
+                        <button
+                          onClick={() => handleSendMessage("Não lembro de ter me cadastrado")}
+                          className="text-[11px] px-3.5 py-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg font-bold hover:bg-amber-100 transition active:scale-95 shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          🔍 Não lembro de me cadastrar
+                        </button>
                       </>
                     )}
 
@@ -622,7 +649,7 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
                           🛏️ 2 Dormitórios
                         </button>
                         <button
-                          onClick={() => handleSendMessage("Precisamos de pelo menos 3 dormitórios")}
+                          onClick={() => handleSendMessage("Preciso de 3 ou mais dormitórios")}
                           className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
                         >
                           🛏️ 3+ Dormitórios
@@ -633,16 +660,33 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
                     {leadProfile.foco === "MORADIA" && leadProfile.dormitorios && !leadProfile.urgencia && (
                       <>
                         <button
-                          onClick={() => handleSendMessage("Temos urgência para mudar de imediato")}
+                          onClick={() => handleSendMessage("Temos urgência imediata (buscamos imóvel pronto)")}
                           className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
                         >
-                          🔑 Urgência Imediata
+                          🔑 Imóvel Pronto (Urgente)
                         </button>
                         <button
-                          onClick={() => handleSendMessage("Temos prazo de obras, lançamento nos atende bem")}
+                          onClick={() => handleSendMessage("O prazo de obras de um lançamento nos atende")}
                           className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
                         >
-                          🏗️ Prazo de Obras (2-3 anos)
+                          🏗️ Prazo de Obras (Lançamento)
+                        </button>
+                      </>
+                    )}
+
+                    {leadProfile.foco === "MORADIA" && leadProfile.dormitorios && leadProfile.urgencia && !leadProfile.regiaoEstilo && (
+                      <>
+                        <button
+                          onClick={() => handleSendMessage("Ficar mais perto da região do meu trabalho/escola é nossa prioridade")}
+                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          📍 Perto de Trabalho / Escola
+                        </button>
+                        <button
+                          onClick={() => handleSendMessage("Nós priorizamos demais um condomínio com lazer de clube bem completo")}
+                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          🌸 Lazer Completo / Clube
                         </button>
                       </>
                     )}
@@ -650,50 +694,84 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
                     {leadProfile.foco === "INVESTIMENTO" && !leadProfile.objetivoInvestimento && (
                       <>
                         <button
-                          onClick={() => handleSendMessage("1) Ganho de capital")}
+                          onClick={() => handleSendMessage("Busco ganho de capital com valorização e revenda antes da entrega")}
                           className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
                         >
-                          💸 Ganho de Capital
+                          📈 Ganho de Capital (Revenda)
                         </button>
                         <button
-                          onClick={() => handleSendMessage("2) Renda passiva com aluguel")}
+                          onClick={() => handleSendMessage("Busco renda passiva com locação regular ou temporada/Airbnb")}
                           className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
                         >
-                          💰 Renda / Aluguel
-                        </button>
-                      </>
-                    )}
-
-                    {leadProfile.foco === "INVESTIMENTO" && leadProfile.objetivoInvestimento && !leadProfile.ticket && (
-                      <>
-                        <button
-                          onClick={() => handleSendMessage("Pretendo planejar em torno de R$ 500 mil")}
-                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
-                        >
-                          💵 Até R$ 500k
-                        </button>
-                        <button
-                          onClick={() => handleSendMessage("Planejamos de R$ 800 mil a R$ 1.5 milhão")}
-                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
-                        >
-                          💎 R$ 800k - R$ 1.5M
+                          💰 Renda com Locação
                         </button>
                       </>
                     )}
 
-                    {leadProfile.foco === "NAO_RECORDA" && (
+                    {leadProfile.foco === "INVESTIMENTO" && leadProfile.objetivoInvestimento && !leadProfile.experiencia && (
                       <>
                         <button
-                          onClick={() => handleSendMessage("Sim, ainda de certa forma penso em comprar um imóvel.")}
+                          onClick={() => handleSendMessage("Estou começando agora, seria o meu primeiro investimento")}
+                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          🆕 Meu Primeiro Projeto
+                        </button>
+                        <button
+                          onClick={() => handleSendMessage("Eu já costumo investir em imóveis e conheço o mercado")}
+                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          💼 Já costumo investir
+                        </button>
+                      </>
+                    )}
+
+                    {leadProfile.foco === "INVESTIMENTO" && leadProfile.objetivoInvestimento && leadProfile.experiencia && !leadProfile.ticket && (
+                      <>
+                        <button
+                          onClick={() => handleSendMessage("Planejamos um aporte ou ticket em torno de R$ 500 mil")}
+                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          💵 Planejado até R$ 500k
+                        </button>
+                        <button
+                          onClick={() => handleSendMessage("Nosso ticket planejado está de R$ 800 mil a R$ 1.5 M")}
+                          className="text-[11px] px-3.5 py-2 bg-slate-100 border border-slate-200 text-slate-800 rounded-lg font-bold hover:bg-slate-200 transition shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          💎 R$ 800k a R$ 1.5 M
+                        </button>
+                      </>
+                    )}
+
+                    {leadProfile.foco === "NAO_RECORDA" && !leadProfile.confirmacaoInteresse && (
+                      <>
+                        <button
+                          onClick={() => handleSendMessage("Sim, a ideia de comprar um imóvel no mercado ainda passa pela minha cabeça")}
                           className="text-[11px] px-3.5 py-2 bg-green-50 border border-green-200 text-green-800 rounded-lg font-bold hover:bg-green-100 transition shrink-0 snap-center flex items-center gap-1.5"
                         >
-                          👍 Ainda considero comprar
+                          👍 Sim, ainda considero comprar
                         </button>
                         <button
-                          onClick={() => handleSendMessage("Não, esse plano já ficou totalmente para o passado.")}
-                          className="text-[11px] px-3.5 py-2 bg-red-50 border border-red-200 text-red-00 rounded-lg font-bold hover:bg-red-100 transition shrink-0 snap-center flex items-center gap-1.5"
+                          onClick={() => handleSendMessage("Não, esse plano de compra já ficou totalmente no passado")}
+                          className="text-[11px] px-3.5 py-2 bg-red-50 border border-red-200 text-red-800 rounded-lg font-bold hover:bg-red-100 transition shrink-0 snap-center flex items-center gap-1.5"
                         >
                           🛑 Ficou no passado
+                        </button>
+                      </>
+                    )}
+
+                    {leadProfile.foco === "NAO_RECORDA" && leadProfile.confirmacaoInteresse === "Ainda passa pela cabeça" && (
+                      <>
+                        <button
+                          onClick={() => handleSendMessage("Meu foco hoje seria MORADIA")}
+                          className="text-[11px] px-3.5 py-2 bg-teal-50 border border-teal-200 text-teal-800 rounded-lg font-bold hover:bg-teal-100 transition active:scale-95 shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          🏠 Foco em Moradia
+                        </button>
+                        <button
+                          onClick={() => handleSendMessage("Meu foco hoje seria INVESTIMENTO")}
+                          className="text-[11px] px-3.5 py-2 bg-red-50 border border-red-200 text-red-800 rounded-lg font-bold hover:bg-red-100 transition active:scale-95 shrink-0 snap-center flex items-center gap-1.5"
+                        >
+                          📈 Foco em Investimento
                         </button>
                       </>
                     )}
@@ -737,31 +815,31 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
 
               {/* Custom Reset Confirmation Modal overlay */}
               {showResetConfirm && (
-                <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-[100] animate-fade-in">
+                <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-[100] animate-fade-in text-center">
                   <div className="bg-white rounded-2xl p-5 shadow-2xl border border-slate-100 max-w-[280px] w-full text-center space-y-4">
                     <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
                       <LogOut className="h-6 w-6" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-950 uppercase tracking-widest">
+                      <h4 className="text-xs font-bold text-slate-950 uppercase tracking-wider leading-none">
                         Encerrar Conversa?
                       </h4>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                        Isso reiniciará todo o histórico e a qualificação do lead do início.
+                      <p className="text-[11px] text-slate-500 mt-1.5 leading-normal">
+                        Deseja reiniciar a conversa e limpar o histórico atual?
                       </p>
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5">
                       <button
                         onClick={handleReset}
-                        className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition duration-150"
+                        className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition duration-150 cursor-pointer"
                       >
                         Sim, Sair e Reiniciar
                       </button>
                       <button
                         onClick={() => setShowResetConfirm(false)}
-                        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition duration-150"
+                        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition duration-150 cursor-pointer"
                       >
-                        Não, Continuar Conversa
+                        Não, Continuar
                       </button>
                     </div>
                   </div>
@@ -893,6 +971,19 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
                         </span>
                       </div>
                     </div>
+
+                    {/* Região & Estilo de Vida */}
+                    <div className="flex items-start gap-3 pl-2 border-l-2 border-teal-500/30">
+                      <div className="text-[14px] mt-0.5">📍</div>
+                      <div className="flex-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                          Região / Estilo de Vida
+                        </span>
+                        <span className={`text-xs font-semibold ${leadProfile.regiaoEstilo ? "text-teal-900" : "text-slate-400"}`}>
+                          {leadProfile.regiaoEstilo || "Aguardando resposta..."}
+                        </span>
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -908,6 +999,19 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
                         </span>
                         <span className={`text-xs font-semibold ${leadProfile.objetivoInvestimento ? "text-red-900" : "text-slate-400"}`}>
                           {leadProfile.objetivoInvestimento || "Aguardando resposta..."}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Experiência */}
+                    <div className="flex items-start gap-3 pl-2 border-l-2 border-red-500/30">
+                      <div className="text-[14px] mt-0.5">🏢</div>
+                      <div className="flex-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                          Experiência do Investidor
+                        </span>
+                        <span className={`text-xs font-semibold ${leadProfile.experiencia ? "text-red-900" : "text-slate-400"}`}>
+                          {leadProfile.experiencia || "Aguardando resposta..."}
                         </span>
                       </div>
                     </div>

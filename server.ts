@@ -45,7 +45,7 @@ function localSimulateChat(
 ): string {
   const cleanMsg = message.toLowerCase().trim();
 
-  // If the user's message (even if first message) triggers spam/desarme:
+  // If the user's message triggers spam/desarme:
   if (
     cleanMsg.includes("não lembro") ||
     cleanMsg.includes("não cadastrei") ||
@@ -56,64 +56,78 @@ function localSimulateChat(
     cleanMsg.includes("spam") ||
     cleanMsg.includes("de onde")
   ) {
-    return `Entendo perfeitamente! A Lopes guarda históricos de anos. Provavelmente em algum momento você deu uma olhadinha em um site nosso ou visitou um plantão. 🔍\n\nComo os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?`;
+    return `Entendo perfeitamente! A Lopes guarda históricos de anos. Provavelmente você olhou um site nosso no passado. Como os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?`;
   }
 
-  // Rule 0: If conversation is brand new (history is empty)
+  // Rule 0: If conversation is brand new
   if (history.length === 0) {
     if (
       cleanMsg.includes("residencial") ||
       cleanMsg.includes(propertyName.toLowerCase()) ||
       cleanMsg.includes("imóvel específico") ||
       cleanMsg.includes("informações sobre") ||
-      cleanMsg.includes("concept") ||
-      cleanMsg.includes("residencial")
+      cleanMsg.includes("concept")
     ) {
-      return `Olá! Aqui é o assistente virtual do ${agentName}, da Lopes. O ${propertyName} é realmente um projeto fantástico e muito bem localizado! 🏢\n\nPara eu agilizar os materiais dele para você (como plantas e tabelas): o seu interesse nesse projeto seria mais voltado para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?`;
+      return `Olá! Aqui é o assistente do ${agentName}, da Lopes. O ${propertyName} é excelente, uma escolha fantástica! Para eu já separar as plantas e a tabela certa para você: o seu foco nele seria para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?`;
     }
-    return `Olá! Aqui é o assistente virtual do ${agentName}, consultor da Lopes. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. 💎\n\nPara eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?`;
+    return `Olá! Aqui é o assistente do ${agentName}, consultor da Lopes. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. Para eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?`;
   }
 
-  // Find out the focal path of previous discussions
-  let currentFoco: "MORADIA" | "INVESTIMENTO" | "NAO_RECORDA" | null = null;
-  for (const h of history) {
-    const text = h.text.toLowerCase();
-    if (text.includes("moradia") || text.includes("morar")) {
-      currentFoco = "MORADIA";
-    } else if (text.includes("investimento") || text.includes("investir")) {
-      currentFoco = "INVESTIMENTO";
-    } else if (text.includes("não lembro") || text.includes("não cadastrei") || text.includes("não recordo") || text.includes("não me recordo")) {
-      currentFoco = "NAO_RECORDA";
-    }
-  }
+  const fullHistory: ChatMessage[] = [...history, { role: "user", text: message }];
+  const analyzed = localAnalyzeLead(fullHistory);
+  
+  const currentFoco = analyzed.foco;
 
-  // If they are responding to desarmamento
   if (currentFoco === "NAO_RECORDA") {
-    if (
-      cleanMsg.includes("passa") ||
-      cleanMsg.includes("ainda") ||
-      cleanMsg.includes("sim") ||
-      cleanMsg.includes("gostaria") ||
-      cleanMsg.includes("quero") ||
-      cleanMsg.includes("talvez")
-    ) {
-      return `Maravilha! Já captei perfeitamente o seu perfil. O ${agentName} já está assumindo a conversa aqui e vai te mandar as melhores opções da Lopes que se encaixam nisso. Até logo! 👋`;
+    if (analyzed.confirmacaoInteresse === "Ainda passa pela cabeça") {
+      return `Maravilha! E para eu te direcionar ao material certo, o seu foco hoje seria mais voltado para INVESTIMENTO ou MORADIA?`;
+    } else if (analyzed.confirmacaoInteresse === "Ficou no passado") {
+      return `Entendo perfeitamente! Sem problemas. Vou atualizar seu cadastro aqui para não te incomodarmos mais. Desejo muito sucesso em seus caminhos! 👋`;
     } else {
-      return `Entendo perfeitamente! Sem problemas. Vou atualizar seu cadastro aqui para não te incomodarmos mais. Desejo muito sucesso em seus caminhos! Se precisar de algo no futuro, estaremos por aqui. 👋`;
+      if (
+        cleanMsg.includes("passa") ||
+        cleanMsg.includes("ainda") ||
+        cleanMsg.includes("sim") ||
+        cleanMsg.includes("gostaria") ||
+        cleanMsg.includes("quero") ||
+        cleanMsg.includes("talvez") ||
+        cleanMsg.includes("penso")
+      ) {
+        return `Maravilha! E para eu te direcionar ao material certo, o seu foco hoje seria mais voltado para INVESTIMENTO ou MORADIA?`;
+      } else {
+        return `Entendo perfeitamente! Sem problemas. Vou atualizar seu cadastro aqui para não te incomodarmos mais. Desejo muito sucesso em seus caminhos! 👋`;
+      }
     }
   }
 
-  // If we haven't selected a path yet but they replied now:
-  if (!currentFoco) {
-    if (cleanMsg.includes("moradia") || cleanMsg.includes("morar") || cleanMsg.includes("morador") || cleanMsg.includes("própria")) {
-      return `Perfeito! Comprar para morar é buscar qualidade de vida. Para eu filtrar as opções que combinam com sua rotina, me conta:\n\n1) Quantos dormitórios seriam ideais para sua família hoje?\n2) Vocês têm urgência para mudar ou o prazo de obras de um lançamento (geralmente de 2 a 3 anos) atende o planejamento de vocês?`;
-    } else if (cleanMsg.includes("investimento") || cleanMsg.includes("investir") || cleanMsg.includes("fundo") || cleanMsg.includes("roi")) {
-      return `Excelente! Para eu selecionar as melhores taxas de retorno (ROI) aqui na Lopes, qual dessas frentes faz mais sentido hoje?\n\n1) Ganho de capital (revenda antes da entrega das chaves)\n2) Renda passiva com aluguel (tradicional ou Airbnb)\n\nE me conta: você tem em mente uma média de valor (ticket) planejado para esse investimento?`;
+  if (currentFoco === "MORADIA") {
+    if (!analyzed.dormitorios) {
+      return `Parabéns! Escolher um lar é um passo fabuloso para a família. 🏠 Para eu filtrar as opções ideais para vocês, me conta: quantos dormitórios (quartos) seriam ideais hoje?`;
+    }
+    if (!analyzed.urgencia) {
+      return `Perfeito! E sobre o momento de vocês: vocês têm urgência para mudar (imóvel pronto) ou o prazo de obras de um lançamento (geralmente de 2 a 3 anos) atende o planejamento de vocês? 🏗️`;
+    }
+    if (!analyzed.regiaoEstilo) {
+      return `Entendido! Além disso, qual é a prioridade no dia a dia de vocês: preferem focar em ficar mais perto de alguma região/bairro específico (por trabalho/escola) ou priorizam um condomínio com lazer de clube bem completo? 📍`;
     }
   }
 
-  // If they are answering details
-  return `Maravilha! Já captei perfeitamente o seu perfil. O ${agentName} já está assumindo a conversa aqui e vai te mandar as melhores opções da Lopes que se encaixam nisso. Até logo! 👋`;
+  if (currentFoco === "INVESTIMENTO") {
+    if (!analyzed.objetivoInvestimento) {
+      return `Excelente escolha! O mercado imobiliário é perfeito para rentabilizar patrimônio. 📈 Para direcionar as melhores taxas de retorno, qual dessas frentes faz mais sentido para seu projeto hoje?
+1) Ganho de capital (revenda antes da entrega das chaves)
+2) Renda com locação (aluguel tradicional ou Airbnb)`;
+    }
+    if (!analyzed.experiencia) {
+      return `Faz total sentido! E me conta uma coisa para eu alinhar nossa proposta: você já costuma investir em imóveis ou este seria o seu primeiro projeto nesse mercado? 💼`;
+    }
+    if (!analyzed.ticket) {
+      return `Perfeito, anotado. E para fecharmos o seu perfil com chave de ouro: qual o valor aproximado (ticket) ou capacidade de aporte que você planeja para esse investimento hoje? 💰`;
+    }
+  }
+
+  // Final Handoff Output:
+  return `Sensacional! Coletei todas as informações e montei o seu mapa de perfil. O ${agentName} já está analisando o nosso estoque exclusivo na Lopes e vai assumir essa conversa em instantes para te apresentar as opções perfeitas. Até logo! 👋`;
 }
 
 function localAnalyzeLead(history: ChatMessage[]) {
@@ -122,99 +136,199 @@ function localAnalyzeLead(history: ChatMessage[]) {
   let urgencia: string | null = null;
   let objetivoInvestimento: string | null = null;
   let ticket: string | null = null;
+  let experiencia: string | null = null;
+  let regiaoEstilo: string | null = null;
   let confirmacaoInteresse: string | null = null;
   let status: "AGUARDANDO_INICIO" | "EM_ANDAMENTO" | "CONCLUIDO" = "AGUARDANDO_INICIO";
 
   if (history.length === 0) {
-    return { foco, dormitorios, urgencia, objetivoInvestimento, ticket, confirmacaoInteresse, status };
+    return { foco, dormitorios, urgencia, objetivoInvestimento, ticket, experiencia, regiaoEstilo, confirmacaoInteresse, status };
   }
 
   status = "EM_ANDAMENTO";
 
   for (let i = 0; i < history.length; i++) {
     const msg = history[i];
-    const text = msg.text.toLowerCase();
+    const text = msg.text.toLowerCase().trim();
     const isUser = msg.role === "user";
 
     if (isUser) {
-      if (text.includes("moradia") || text.includes("morar") || text.includes("própria")) {
-        foco = "MORADIA";
-      } else if (text.includes("investimento") || text.includes("investir")) {
-        foco = "INVESTIMENTO";
-      } else if (text.includes("não lembro") || text.includes("não recordo") || text.includes("não cadastrei") || text.includes("spam")) {
-        foco = "NAO_RECORDA";
-      }
-
-      // Extract specific details depending on active funnel path
-      if (foco === "MORADIA") {
-        if (text.includes("2 dormitórios") || text.includes("2 quartos") || text.includes(" dois ") || text.includes("2")) {
-          dormitorios = "2 dormitórios";
-        } else if (text.includes("3 dormitórios") || text.includes("3 quartos") || text.includes(" três ") || text.includes("3") || text.includes("3+")) {
-          dormitorios = "3 ou mais dormitórios";
-        } else if (!dormitorios && (text.includes("quarto") || text.includes("dormitório") || text.includes("dorms"))) {
-          dormitorios = msg.text;
+      // Determine focal path if not set:
+      if (!foco) {
+        if (text.includes("moradia") || text.includes("morar") || text.includes("própria")) {
+          foco = "MORADIA";
+        } else if (text.includes("investimento") || text.includes("investir")) {
+          foco = "INVESTIMENTO";
+        } else if (text.includes("não lembro") || text.includes("não recordo") || text.includes("não cadastrei") || text.includes("spam")) {
+          foco = "NAO_RECORDA";
         }
-
-        if (text.includes("urgência") || text.includes("imediato") || text.includes("mudar de imediato") || text.includes("urgente")) {
-          urgencia = "Urgência Imediata";
-        } else if (text.includes("prazo") || text.includes("obras") || text.includes("lançamento") || text.includes("2 a 3 anos") || text.includes("2-3")) {
-          urgencia = "Prazo de obras (2 a 3 anos)";
-        } else if (!urgencia && (text.includes("mudar") || text.includes("obra") || text.includes("atende"))) {
-          urgencia = "Aceita prazo de obras";
-        }
-      }
-
-      if (foco === "INVESTIMENTO") {
-        if (text.includes("ganho") || text.includes("capital") || text.includes("revenda") || text.includes("1")) {
-          objetivoInvestimento = "Ganho de Capital / Revenda";
-        } else if (text.includes("renda") || text.includes("aluguel") || text.includes("airbnb") || text.includes("passiva") || text.includes("2")) {
-          objetivoInvestimento = "Renda Passiva / Aluguel";
-        }
-
-        if (text.includes("500") || text.includes("quinhentos") || text.includes("500k")) {
-          ticket = "Até R$ 500 mil";
-        } else if (text.includes("800") || text.includes("1.5") || text.includes("milhão") || text.includes("membro") || text.includes("800k")) {
-          ticket = "R$ 800 mil a R$ 1.5 M";
-        } else if (!ticket && (text.includes("r$") || text.includes("planejado") || text.includes("orçamento") || text.includes("valor"))) {
-          ticket = msg.text;
-        }
-      }
-
-      if (foco === "NAO_RECORDA") {
-        if (text.includes("passa") || text.includes("ainda") || text.includes("sim") || text.includes("interessa") || text.includes("penso")) {
-          confirmacaoInteresse = "Ainda passa pela cabeça";
-        } else if (text.includes("passado") || text.includes("não") || text.includes("ficou") || text.includes("nunca")) {
-          confirmacaoInteresse = "Ficou no passado";
+      } else {
+        // If foco is already set, subsequent messages fill fields in order
+        if (foco === "MORADIA") {
+          // Fill based on what is missing OR extract smartly
+          // 1. Dormitórios
+          if (!dormitorios) {
+            if (text.includes("2") || text.includes("dois") || text.includes("duas") || text.includes("dias") || text.includes("dormitórios") || text.includes("quartos")) {
+              if (text.includes("3") || text.includes("três") || text.includes("quatro") || text.includes("4")) {
+                dormitorios = "3 ou mais dormitórios";
+              } else {
+                dormitorios = "2 dormitórios";
+              }
+            } else if (text.includes("3") || text.includes("três") || text.includes("+") || text.includes("mais")) {
+              dormitorios = "3 ou mais dormitórios";
+            }
+          }
+          // 2. Urgência / Prazo
+          else if (!urgencia) {
+            if (text.includes("pronto") || text.includes("urgência") || text.includes("urgente") || text.includes("imediato")) {
+              urgencia = "Urgência Imediata (Pronto)";
+            } else if (text.includes("obras") || text.includes("prazo") || text.includes("lançamento") || text.includes("anos") || text.includes("atende")) {
+              urgencia = "Prazo de Obras (Lançamento)";
+            }
+          }
+          // 3. Região / Estilo
+          else if (!regiaoEstilo) {
+            if (text.includes("trabalho") || text.includes("escola") || text.includes("perto") || text.includes("bairro") || text.includes("região")) {
+              regiaoEstilo = "Perto do Trabalho / Escola";
+            } else if (text.includes("lazer") || text.includes("clube") || text.includes("completo") || text.includes("piscina")) {
+              regiaoEstilo = "Condomínio Lazer Clube";
+            } else {
+              regiaoEstilo = msg.text; // fallback
+            }
+          }
+        } else if (foco === "INVESTIMENTO") {
+          // 1. Objetivo
+          if (!objetivoInvestimento) {
+            if (text.includes("ganho") || text.includes("capital") || text.includes("revenda") || text.includes("valorização") || text.includes("1")) {
+              objetivoInvestimento = "Ganho de Capital / Revenda";
+            } else if (text.includes("renda") || text.includes("locação") || text.includes("aluguel") || text.includes("passiva") || text.includes("airbnb") || text.includes("2")) {
+              objetivoInvestimento = "Renda com Locação";
+            }
+          }
+          // 2. Experiência
+          else if (!experiencia) {
+            if (text.includes("primeiro") || text.includes("primeira") || text.includes("estou começando") || text.includes("novo") || text.includes("1")) {
+              experiencia = "Primeiro investimento";
+            } else if (text.includes("costumo") || text.includes("já invisto") || text.includes("experiente") || text.includes("já tenho") || text.includes("2")) {
+              experiencia = "Já investe em imóveis";
+            }
+          }
+          // 3. Ticket
+          else if (!ticket) {
+            if (text.includes("500") || text.includes("quinhentos") || text.includes("500k") || text.includes("1")) {
+              ticket = "Em torno de R$ 500 mil";
+            } else if (text.includes("800") || text.includes("1.5") || text.includes("milhão") || text.includes("membro") || text.includes("800k") || text.includes("2")) {
+              ticket = "R$ 800 mil a R$ 1.5 M";
+            } else {
+              ticket = msg.text; // fallback
+            }
+          }
+        } else if (foco === "NAO_RECORDA") {
+          if (!confirmacaoInteresse) {
+            if (text.includes("sim") || text.includes("ainda") || text.includes("passa") || text.includes("considero")) {
+              confirmacaoInteresse = "Ainda passa pela cabeça";
+            } else if (text.includes("não") || text.includes("passado") || text.includes("ficou")) {
+              confirmacaoInteresse = "Ficou no passado";
+            }
+          } else if (confirmacaoInteresse === "Ainda passa pela cabeça") {
+            if (text.includes("moradia") || text.includes("morar") || text.includes("própria")) {
+              foco = "MORADIA";
+            } else if (text.includes("investimento") || text.includes("investir")) {
+              foco = "INVESTIMENTO";
+            }
+          }
         }
       }
     } else {
-      // If assistant confirmed handoff or "assumindo a conversa"
-      if (text.includes("assumindo a conversa") || text.includes("até logo") || text.includes("não te incomodarmos mais") || text.includes("sucesso em seus caminhos")) {
+      // If assistant confirmed handoff or complete
+      if (text.includes("sensacional") || text.includes("anotei tudo aqui") || text.includes("coletei todas as informações") || text.includes("assumir essa conversa") || text.includes("sucesso em seus caminhos")) {
         status = "CONCLUIDO";
       }
     }
   }
 
-  // Safeguards to set completed flag if necessary inputs are defined
-  if (dormitorios && urgencia && foco === "MORADIA") {
-    status = "CONCLUIDO";
-  }
-  if (objetivoInvestimento && ticket && foco === "INVESTIMENTO") {
-    status = "CONCLUIDO";
-  }
-  if (confirmacaoInteresse && foco === "NAO_RECORDA") {
-    status = "CONCLUIDO";
+  // Fallbacks if user skips or if they typed general match:
+  for (let i = 0; i < history.length; i++) {
+    const msg = history[i];
+    const text = msg.text.toLowerCase();
+    
+    if (msg.role === "user") {
+      // Extract anywhere in text
+      if (text.includes("moradia") || text.includes("morar") || text.includes("própria")) {
+        foco = "MORADIA";
+      } else if (text.includes("investimento") || text.includes("investir")) {
+        foco = "INVESTIMENTO";
+      }
+
+      if (foco === "MORADIA") {
+        if (!dormitorios) {
+          if (text.includes("2 dorm") || text.includes("2 quart") || text.includes("2 d") || text.includes("dois dorm") || text.includes("dois quart")) {
+            dormitorios = "2 dormitórios";
+          } else if (text.includes("3 dorm") || text.includes("3 quart") || text.includes("3 d") || text.includes("três dorm") || text.includes("três quart") || text.includes("3+")) {
+            dormitorios = "3 ou mais dormitórios";
+          }
+        }
+        if (!urgencia) {
+          if (text.includes("pronto") || text.includes("urgência") || text.includes("urgente") || text.includes("imediata") || text.includes("imediato")) {
+            urgencia = "Urgência Imediata (Pronto)";
+          } else if (text.includes("obras") || text.includes("prazo") || text.includes("lançamento") || text.includes("2 a 3 anos") || text.includes("2-3") || text.includes("atende")) {
+            urgencia = "Prazo de Obras (Lançamento)";
+          }
+        }
+        if (!regiaoEstilo) {
+          if (text.includes("trabalho") || text.includes("escola") || text.includes("perto de") || text.includes("região") || text.includes("bairro")) {
+            regiaoEstilo = "Perto do Trabalho / Escola";
+          } else if (text.includes("lazer") || text.includes("clube") || text.includes("completo") || text.includes("clube")) {
+            regiaoEstilo = "Condomínio Lazer Clube";
+          }
+        }
+      } else if (foco === "INVESTIMENTO") {
+        if (!objetivoInvestimento) {
+          if (text.includes("ganho") || text.includes("capital") || text.includes("revenda") || text.includes("valorização")) {
+            objetivoInvestimento = "Ganho de Capital / Revenda";
+          } else if (text.includes("renda") || text.includes("locação") || text.includes("aluguel") || text.includes("passiva") || text.includes("airbnb")) {
+            objetivoInvestimento = "Renda com Locação";
+          }
+        }
+        if (!experiencia) {
+          if (text.includes("primeiro") || text.includes("primeira") || text.includes("estou começando") || text.includes("novo")) {
+            experiencia = "Primeiro investimento";
+          } else if (text.includes("costumo") || text.includes("já invisto") || text.includes("experiente") || text.includes("já tenho")) {
+            experiencia = "Já investe em imóveis";
+          }
+        }
+        if (!ticket) {
+          if (text.includes("500") || text.includes("quinhentos") || text.includes("500k")) {
+            ticket = "Em torno de R$ 500 mil";
+          } else if (text.includes("800") || text.includes("1.5") || text.includes("milhão") || text.includes("membro") || text.includes("800k")) {
+            ticket = "R$ 800 mil a R$ 1.5 M";
+          }
+        }
+      }
+    }
   }
 
-  return {
-    foco,
-    dormitorios,
-    urgencia,
-    objetivoInvestimento,
-    ticket,
-    confirmacaoInteresse,
-    status,
-  };
+  // Set completed flags
+  if (foco === "MORADIA" && dormitorios && urgencia && regiaoEstilo) {
+    status = "CONCLUIDO";
+  }
+  if (foco === "INVESTIMENTO" && objetivoInvestimento && experiencia && ticket) {
+    status = "CONCLUIDO";
+  }
+  if (foco === "NAO_RECORDA" && confirmacaoInteresse) {
+    if (confirmacaoInteresse === "Ficou no passado") {
+      status = "CONCLUIDO";
+    } else if (confirmacaoInteresse === "Ainda passa pela cabeça" && foco !== "NAO_RECORDA") {
+      if (foco === "MORADIA" && dormitorios && urgencia && regiaoEstilo) {
+        status = "CONCLUIDO";
+      }
+      if (foco === "INVESTIMENTO" && objetivoInvestimento && experiencia && ticket) {
+        status = "CONCLUIDO";
+      }
+    }
+  }
+
+  return { foco, dormitorios, urgencia, objetivoInvestimento, ticket, experiencia, regiaoEstilo, confirmacaoInteresse, status };
 }
 
 async function startServer() {
@@ -240,50 +354,70 @@ async function startServer() {
       }
 
       // Format the prompt system instruction
-      const systemInstruction = `Você é o assistente virtual de ${agentName}, consultor imobiliário associado à Lopes. Sua única missão é descobrir o perfil do cliente e qualificá-lo de forma leve e rápida antes de passar o atendimento para o consultor humano.
+      const systemInstruction = `Você é o assistente virtual de ${agentName}, consultor imobiliário sênior associado à Lopes. Sua missão é fazer a qualificação COMPLETA e profunda do lead através de uma conversa natural, fluida e em formato de pingue-pongue (uma etapa por vez) via WhatsApp.
 
-DIRETRIZES DE ESTILO:
-1. Linguagem de WhatsApp: frases curtas, parágrafos de no máximo 2-3 linhas.
-2. Use quebras de linha frequentes e emojis de forma sutil para facilitar a leitura no celular. Sinta-se como se estivesse digitando no celular.
-3. Nunca mande blocos massivos de texto ("textões").
-4. Termine quase todas as interações com uma pergunta de múltipla escolha ou resposta direta (Sim/Não, 1 ou 2, A ou B).
+DIRETRIZES OBRIGATÓRIAS DE CONVERSAÇÃO:
+- Monitore o fluxo: NUNCA faça mais de uma pergunta no mesmo texto. Faça apenas uma pergunta clara por vez de forma leve.
+- Use linguagem de WhatsApp: frases curtas, parágrafos de no máximo 2 linhas, emojis discretos e muitas quebras de linha.
+- Mantenha sempre o controle da conversa terminando sua fala com uma pergunta única e clara.
 
-REGRAS DE CONVERSAÇÃO (FUNIL):
+---
 
-- PRIMEIRA RESPOSTA (PIVÔ DE ENTRADA):
-  Sua primeira resposta depende de como o cliente iniciou a conversa (ou caso a história esteja vazia):
-  GATILHO 1: Se a mensagem inicial indicar um imóvel específico (Ex: "Quero informações sobre o ${propertyName}" ou se mencionar o nome do condomínio, residencial ou apartamento).
-  -> Responda exatamente assim:
-  "Olá! Aqui é o assistente virtual do ${agentName}, da Lopes. O ${propertyName} é realmente um projeto fantástico e muito bem localizado! 🏢
-  Para eu agilizar os materiais dele para você (como plantas e tabelas): o seu interesse nesse projeto seria mais voltado para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?"
+### FLUXO DE ENTRADA (IDENTIFICAÇÃO DE GATILHO)
 
-  GATILHO 2: Se a mensagem for um "Oi", início geral, lista fria, ou não indicar um imóvel.
-  -> Responda exatamente assim:
-  "Olá! Aqui é o assistente virtual do ${agentName}, consultor da Lopes. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. 💎
-  Para eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?"
+GATILHO 1: Lead veio de um imóvel específico do site (Ex: "Quero informações do Residencial X" ou se mencionar o nome do condomínio, residencial ou apartamento).
+-> Resposta exatamente assim: "Olá! Aqui é o assistente do ${agentName}, da Lopes. O ${propertyName} é excelente, uma escolha fantástica! Para eu já separar as plantas e a tabela certa para você: o seu foco nele seria para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?"
 
-- FUNIL DE QUALIFICAÇÃO (APÓS O PIVÔ):
-  Se o cliente responder INVESTIMENTO:
-  Pergunte pelo objetivo estratégico e ticket:
-  "Excelente! Para eu selecionar as melhores taxas de retorno (ROI) aqui na Lopes, qual dessas frentes faz mais sentido hoje?
-  1) Ganho de capital (revenda antes da entrega das chaves)
-  2) Renda passiva com aluguel (tradicional ou Airbnb)
-  E me conta: você tem em mente uma média de valor (ticket) planejado para esse investimento?"
+GATILHO 2: Início geral, "Oi" ou Lista Fria.
+-> Resposta exatamente assim: "Olá! Aqui é o assistente do ${agentName}, consultor da Lopes. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. Para eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?"
 
-  Se o cliente responder MORADIA:
-  Pergunte pelo prazo e tamanho da família:
-  "Perfeito! Comprar para morar é buscar qualidade de vida. Para eu filtrar as opções que combinam com sua rotina, me conta:
-  1) Quantos dormitórios seriam ideais para sua família hoje?
-  2) Vocês têm urgência para mudar ou o prazo de obras de um lançamento (geralmente de 2 a 3 anos) atende o planejamento de vocês?"
+---
 
-  Se o cliente disser "NÃO LEMBRO DE TER ME CADASTRADO" ou expressar negação similar:
-  Use o desarmamento exatamente dessa forma:
-  "Entendo perfeitamente! A Lopes guarda históricos de anos. Provavelmente em algum momento você deu uma olhadinha em um site nosso ou visitou um plantão.
-  Como os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?"
+### TRATAMENTO DE OBJEÇÃO (Se disser que não lembra do cadastro)
+"Entendo perfeitamente! A Lopes guarda históricos de anos. Provavelmente você olhou um site nosso no passado. Como os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?"
+-> Se ficou no passado: Encerre educadamente (Ex: "Entendo perfeitamente! Sem problemas. Vou atualizar seu cadastro aqui para não te incomodarmos mais. Desejo muito sucesso em seus caminhos! 👋").
+-> Se ainda pensa nisso: Pergunte se o foco atual seria Investimento ou Moradia.
 
-- FINALIZAÇÃO DA TAREFA (HANDOFF):
-  Assim que você coletar as respostas essenciais de perfil (seja de investimento ou moradia, ou se ele confirmar interesse após o desarmamento), envie a seguinte mensagem de encerramento, mude seu status mental para CONCLUÍDO e não faça mais NENHUMA pergunta:
-  "Maravilha! Já captei perfeitamente o seu perfil. O ${agentName} já está assumindo a conversa aqui e vai te mandar as melhores opções da Lopes que se encaixam nisso. Até logo! 👋"`;
+---
+
+### FUNIL DE QUALIFICAÇÃO DEEP (PROFOUND QUALIFICATION)
+
+#### CANAL 1: PERFIL INVESTIDOR (Racional, focado em negócios)
+
+Passo I (Estratégia): Assim que o cliente disser "Investimento" ou similar:
+"Excelente escolha! O mercado imobiliário é perfeito para rentabilizar patrimônio. 📈 Para direcionar as melhores taxas de retorno, qual dessas frentes faz mais sentido para seu projeto hoje?
+1) Ganho de capital (revenda antes da entrega das chaves)
+2) Renda com locação (aluguel tradicional ou Airbnb)"
+
+Passo II (Experiência): Após o cliente responder o Passo I, valide a resposta e filtre a experiência:
+"Faz total sentido! E me conta uma coisa para eu alinhar nossa proposta: você já costuma investir em imóveis ou este seria o seu primeiro projeto nesse mercado? 💼"
+
+Passo III (Orçamento): Após o cliente responder o Passo II, valide a resposta e filtre o capital:
+"Perfeito, anotado. E para fecharmos o seu perfil com chave de ouro e eu te mandar os melhores fluxos de pagamento da Lopes, qual a média de valor (ticket de entrada) ou capacidade de aporte que você planeja para esse investimento hoje? 💰"
+
+-> Após a resposta do Passo III, siga para o [GATILHO DE HANDOFF].
+
+---
+
+#### CANAL 2: PERFIL MORADIA (Emocional, focado em bem-estar)
+
+Passo I (Dormitórios): Assim que o cliente disser "Moradia" ou similar:
+"Parabéns! Escolher um lar é um passo fabuloso para a família. 🏠 Para eu filtrar as opções ideais para vocês, me conta: quantos dormitórios (quartos) seriam ideais hoje?"
+
+Passo II (Momentum/Prazo): Após o cliente responder o Passo I, valide a resposta e filtre o prazo:
+"Perfeito! E sobre o momento de vocês: vocês têm urgência para mudar (imóvel pronto) ou o prazo de obras de um lançamento (geralmente de 2 a 3 anos) atende o planejamento de vocês? 🏗️"
+
+Passo III (Estilo de Vida + Região): Após o cliente responder o Passo II, valide a resposta e filtre o estilo:
+"Entendido! Além disso, qual é a prioridade no dia a dia de vocês: preferem focar em ficar mais perto de alguma região/bairro específico (por trabalho/escola) ou priorizam um condomínio com lazer de clube bem completo? 📍"
+
+-> Após a resposta do Passo III, siga para o [GATILHO DE HANDOFF].
+
+---
+
+### GATILHO DE HANDOFF (PASSAGEM PARA O HUMANO)
+Assim que coletar todas as informações do Passo III (seja de Investidor ou Moradia), envie a seguinte mensagem final de fechamento, coloque o status em [CONCLUÍDO] e encerre:
+
+"Sensacional! Coletei todas as informações e montei o seu mapa de perfil. O ${agentName} já está analisando o nosso estoque exclusivo na Lopes e vai assumir essa conversa em instantes para te apresentar as opções perfeitas. Até logo! 👋"`;
 
       // Build contents array for the chats SDK / model call
       const contents = history.map((h) => ({
@@ -328,6 +462,8 @@ REGRAS DE CONVERSAÇÃO (FUNIL):
           urgencia: null,
           objetivoInvestimento: null,
           ticket: null,
+          experiencia: null,
+          regiaoEstilo: null,
           confirmacaoInteresse: null,
           status: "AGUARDANDO_INICIO",
         });
@@ -350,8 +486,10 @@ Instruções para os campos:
 3. "urgencia": Descrição se tem urgência ou prefere obras (ou se aceita 2-3 anos) (ou null).
 4. "objetivoInvestimento": Se prefere ganho de capital (revenda) ou renda passiva (aluguel/Airbnb) (ou null).
 5. "ticket": O orçamento planejado mencionado pelo cliente (ex: "R$ 500k", "R$ 1 milhão", ou null).
-6. "confirmacaoInteresse": Se o cliente disse que não se lembra de ter se cadastrado, mas respondeu se o plano ainda passa pela cabeça dele ou se já ficou no passado (ex: "Ainda passa", "Ficou no passado", ou null).
-7. "status": Retorne "CONCLUIDO" se a conversa chegou ao fim com a mensagem de encerramento (o assistente informou que o corretor já está assumindo o atendimento) ou se todos os dados necessários foram informados. Caso contrário, retorne "EM_ANDAMENTO".`;
+6. "experiencia": Se já costuma investir em imóveis ou se é seu primeiro projeto (ou null).
+7. "regiaoEstilo": Bairro/Região preferida para moradia ou prioridades de estilo de vida como perto do trabalho/escola ou condomínio de lazer clube (ou null).
+8. "confirmacaoInteresse": Se o cliente disse que não se lembra de ter se cadastrado, mas respondeu se o plano ainda passa pela cabeça dele ou se já ficou no passado (ex: "Ainda passa", "Ficou no passado", ou null).
+9. "status": Retorne "CONCLUIDO" se a conversa chegou ao fim com a mensagem de encerramento (o assistente informou que o corretor já está assumindo o atendimento) ou se todos os dados necessários foram informados. Caso contrário, retorne "EM_ANDAMENTO".`;
 
       const analysisResponse = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -380,6 +518,14 @@ Instruções para os campos:
               ticket: {
                 type: Type.STRING,
                 description: "Orçamento informado pelo cliente para o imóvel ou null.",
+              },
+              experiencia: {
+                type: Type.STRING,
+                description: "Saber se já investe em imóveis ou se é o primeiro investimento ou null.",
+              },
+              regiaoEstilo: {
+                type: Type.STRING,
+                description: "Bairro de preferência ou prioridade de condomínio de lazer vs perto do metrô/trabalho/escola ou null.",
               },
               confirmacaoInteresse: {
                 type: Type.STRING,
