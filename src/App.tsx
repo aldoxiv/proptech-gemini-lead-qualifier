@@ -229,6 +229,18 @@ export default function App() {
   const chatState = history.length;
   const isConcluido = leadProfile.status === "CONCLUIDO" || history.some((msg) => msg.role === 'model' && msg.text.includes("está assumindo a conversa"));
 
+  // Check if user initiated positively (such as with Gatilho 1 or Gatilho 2), which means the objection button shouldn't be shown
+  const hasPositiveStart = history.some((msg) =>
+    msg.role === "user" && (
+      msg.text.toLowerCase().includes("informações") ||
+      msg.text.toLowerCase().includes("interessado") ||
+      msg.text.toLowerCase().includes("moradia") ||
+      msg.text.toLowerCase().includes("investimento") ||
+      msg.text.toLowerCase().includes("morar") ||
+      msg.text.toLowerCase().includes("investir")
+    )
+  );
+
   // Calculate funnel percentage
   const getFunnelProgress = () => {
     if (history.length === 0) return 0;
@@ -600,7 +612,7 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
               )}
 
               {/* Contextual fast-suggestion replies based on chat state */}
-              {history.length > 0 && !isTyping && !isAnalyzing && !isConcluido && (
+              {history.length > 0 && !isTyping && !isConcluido && (
                 <div className="px-3 py-2.5 bg-white border-t border-slate-100 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -631,12 +643,14 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
                         >
                           📈 Investimento
                         </button>
-                        <button
-                          onClick={() => handleSendMessage("Não lembro de ter me cadastrado")}
-                          className="text-[11px] px-3.5 py-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg font-bold hover:bg-amber-100 transition active:scale-95 shrink-0 snap-center flex items-center gap-1.5"
-                        >
-                          🔍 Não lembro de me cadastrar
-                        </button>
+                        {!hasPositiveStart && (
+                          <button
+                            onClick={() => handleSendMessage("Não lembro de ter me cadastrado")}
+                            className="text-[11px] px-3.5 py-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg font-bold hover:bg-amber-100 transition active:scale-95 shrink-0 snap-center flex items-center gap-1.5"
+                          >
+                            🔍 Não lembro de me cadastrar
+                          </button>
+                        )}
                       </>
                     )}
 

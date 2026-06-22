@@ -234,8 +234,26 @@ function localAnalyzeLead(history: ChatMessage[]) {
           if (!confirmacaoInteresse) {
             if (text.includes("não") || text.includes("passado") || text.includes("ficou") || text.includes("nunca")) {
               confirmacaoInteresse = "Ficou no passado";
-            } else if (text.includes("sim") || text.includes("ainda") || text.includes("passa") || text.includes("considero")) {
+            } else if (
+              text.includes("sim") ||
+              text.includes("ainda") ||
+              text.includes("passa") ||
+              text.includes("considero") ||
+              text.includes("quero") ||
+              text.includes("moradia") ||
+              text.includes("morar") ||
+              text.includes("própria") ||
+              text.includes("investimento") ||
+              text.includes("investir") ||
+              text.includes("gostaria") ||
+              text.includes("interesse")
+            ) {
               confirmacaoInteresse = "Ainda passa pela cabeça";
+              if (text.includes("moradia") || text.includes("morar") || text.includes("própria")) {
+                foco = "MORADIA";
+              } else if (text.includes("investimento") || text.includes("investir")) {
+                foco = "INVESTIMENTO";
+              }
             }
           } else if (confirmacaoInteresse === "Ainda passa pela cabeça") {
             if (text.includes("moradia") || text.includes("morar") || text.includes("própria")) {
@@ -269,9 +287,9 @@ function localAnalyzeLead(history: ChatMessage[]) {
 
       if (foco === "MORADIA") {
         if (!dormitorios) {
-          if (text.includes("2 dorm") || text.includes("2 quart") || text.includes("2 d") || text.includes("dois dorm") || text.includes("dois quart")) {
+          if (text.includes("2 dorm") || text.includes("2 quart") || text.includes("2 d") || text.includes("dois dorm") || text.includes("dois quart") || text.trim() === "2" || text === "dois") {
             dormitorios = "2 dormitórios";
-          } else if (text.includes("3 dorm") || text.includes("3 quart") || text.includes("3 d") || text.includes("três dorm") || text.includes("três quart") || text.includes("3+")) {
+          } else if (text.includes("3 dorm") || text.includes("3 quart") || text.includes("3 d") || text.includes("três dorm") || text.includes("três quart") || text.includes("3+") || text.trim() === "3" || text === "três" || text.includes("mais") || text.includes("quatro") || text.includes("4")) {
             dormitorios = "3 ou mais dormitórios";
           }
         }
@@ -291,23 +309,23 @@ function localAnalyzeLead(history: ChatMessage[]) {
         }
       } else if (foco === "INVESTIMENTO") {
         if (!objetivoInvestimento) {
-          if (text.includes("ganho") || text.includes("capital") || text.includes("revenda") || text.includes("valorização")) {
+          if (text.includes("ganho") || text.includes("capital") || text.includes("revenda") || text.includes("valorização") || text.trim() === "1") {
             objetivoInvestimento = "Ganho de Capital / Revenda";
-          } else if (text.includes("renda") || text.includes("locação") || text.includes("aluguel") || text.includes("passiva") || text.includes("airbnb")) {
+          } else if (text.includes("renda") || text.includes("locação") || text.includes("aluguel") || text.includes("passiva") || text.includes("airbnb") || text.trim() === "2") {
             objetivoInvestimento = "Renda com Locação";
           }
         }
         if (!experiencia) {
-          if (text.includes("primeiro") || text.includes("primeira") || text.includes("estou começando") || text.includes("novo")) {
+          if (text.includes("primeiro") || text.includes("primeira") || text.includes("estou começando") || text.includes("novo") || text.trim() === "1") {
             experiencia = "Primeiro investimento";
-          } else if (text.includes("costumo") || text.includes("já invisto") || text.includes("experiente") || text.includes("já tenho")) {
+          } else if (text.includes("costumo") || text.includes("já invisto") || text.includes("experiente") || text.includes("já tenho") || text.trim() === "2") {
             experiencia = "Já investe em imóveis";
           }
         }
         if (!ticket) {
-          if (text.includes("500") || text.includes("quinhentos") || text.includes("500k")) {
+          if (text.includes("500") || text.includes("quinhentos") || text.includes("500k") || text.trim() === "1") {
             ticket = "Em torno de R$ 500 mil";
-          } else if (text.includes("800") || text.includes("1.5") || text.includes("milhão") || text.includes("membro") || text.includes("800k")) {
+          } else if (text.includes("800") || text.includes("1.5") || text.includes("milhão") || text.includes("membro") || text.includes("800k") || text.trim() === "2") {
             ticket = "R$ 800 mil a R$ 1.5 M";
           }
         }
@@ -550,7 +568,24 @@ Instruções para os campos:
 
       const jsonStr = analysisResponse.text ? analysisResponse.text.trim() : "{}";
       const leadData = JSON.parse(jsonStr);
-      res.json(leadData);
+      
+      // High-fidelity local parser calculation as a stable fallback/validation layer
+      const localData = localAnalyzeLead(history);
+      
+      // Merge: prefer Gemini, but if Gemini returned null or failed to parse a field that local rule-based parser found, use localData
+      const mergedData = {
+        foco: leadData.foco && leadData.foco !== "null" ? leadData.foco : localData.foco,
+        dormitorios: leadData.dormitorios && leadData.dormitorios !== "null" ? leadData.dormitorios : localData.dormitorios,
+        urgencia: leadData.urgencia && leadData.urgencia !== "null" ? leadData.urgencia : localData.urgencia,
+        objetivoInvestimento: leadData.objetivoInvestimento && leadData.objetivoInvestimento !== "null" ? leadData.objetivoInvestimento : localData.objetivoInvestimento,
+        ticket: leadData.ticket && leadData.ticket !== "null" ? leadData.ticket : localData.ticket,
+        experiencia: leadData.experiencia && leadData.experiencia !== "null" ? leadData.experiencia : localData.experiencia,
+        regiaoEstilo: leadData.regiaoEstilo && leadData.regiaoEstilo !== "null" ? leadData.regiaoEstilo : localData.regiaoEstilo,
+        confirmacaoInteresse: leadData.confirmacaoInteresse && leadData.confirmacaoInteresse !== "null" ? leadData.confirmacaoInteresse : localData.confirmacaoInteresse,
+        status: leadData.status || localData.status
+      };
+
+      res.json(mergedData);
     } catch (error: any) {
       // High-fidelity local parser fallback
       const leadData = localAnalyzeLead(history);
