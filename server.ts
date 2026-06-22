@@ -85,6 +85,13 @@ function localSimulateChat(
       return `Entendo perfeitamente! Sem problemas. Vou atualizar seu cadastro aqui para não te incomodarmos mais. Desejo muito sucesso em seus caminhos! 👋`;
     } else {
       if (
+        cleanMsg.includes("não") ||
+        cleanMsg.includes("passado") ||
+        cleanMsg.includes("ficou") ||
+        cleanMsg.includes("nunca")
+      ) {
+        return `Entendo perfeitamente! Sem problemas. Vou atualizar seu cadastro aqui para não te incomodarmos mais. Desejo muito sucesso em seus caminhos! 👋`;
+      } else if (
         cleanMsg.includes("passa") ||
         cleanMsg.includes("ainda") ||
         cleanMsg.includes("sim") ||
@@ -225,10 +232,10 @@ function localAnalyzeLead(history: ChatMessage[]) {
           }
         } else if (foco === "NAO_RECORDA") {
           if (!confirmacaoInteresse) {
-            if (text.includes("sim") || text.includes("ainda") || text.includes("passa") || text.includes("considero")) {
-              confirmacaoInteresse = "Ainda passa pela cabeça";
-            } else if (text.includes("não") || text.includes("passado") || text.includes("ficou")) {
+            if (text.includes("não") || text.includes("passado") || text.includes("ficou") || text.includes("nunca")) {
               confirmacaoInteresse = "Ficou no passado";
+            } else if (text.includes("sim") || text.includes("ainda") || text.includes("passa") || text.includes("considero")) {
+              confirmacaoInteresse = "Ainda passa pela cabeça";
             }
           } else if (confirmacaoInteresse === "Ainda passa pela cabeça") {
             if (text.includes("moradia") || text.includes("morar") || text.includes("própria")) {
