@@ -23,7 +23,9 @@ import {
   Layers,
   Building,
   DollarSign,
-  Scale
+  Scale,
+  Edit3,
+  Trash2
 } from "lucide-react";
 import {
   ExpansionRegion,
@@ -199,6 +201,10 @@ export default function ExpansionModule() {
   const [isAnalyzingLand, setIsAnalyzingLand] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any | null>(null);
 
+  // Edit & Delete Land State
+  const [editingLand, setEditingLand] = useState<LandOpportunity | null>(null);
+  const [landToDelete, setLandToDelete] = useState<LandOpportunity | null>(null);
+
   // Sample Documents Data
   const [documents, setDocuments] = useState<LandDocument[]>([
     {
@@ -357,6 +363,40 @@ export default function ExpansionModule() {
     } finally {
       setIsAnalyzingLand(false);
     }
+  };
+
+  const handleStartEditLand = (land: LandOpportunity) => {
+    setEditingLand({ ...land });
+  };
+
+  const handleSaveEditedLand = () => {
+    if (!editingLand) return;
+    const now = new Date();
+    const timeStr = `${now.toLocaleDateString("pt-BR")} ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+
+    const areaNum = Number(editingLand.areaSqm) || 1200;
+    const updated: LandOpportunity = {
+      ...editingLand,
+      areaSqm: areaNum,
+      maxBuildingAreaSqm: areaNum * 4,
+      lastUpdated: `Editado às ${timeStr}`
+    };
+
+    setLands(lands.map((l) => (l.id === editingLand.id ? updated : l)));
+    if (selectedLandForScript?.id === editingLand.id) {
+      setSelectedLandForScript(updated);
+    }
+    setEditingLand(null);
+  };
+
+  const handleConfirmDeleteLand = () => {
+    if (!landToDelete) return;
+    const updatedLands = lands.filter((l) => l.id !== landToDelete.id);
+    setLands(updatedLands);
+    if (selectedLandForScript?.id === landToDelete.id) {
+      setSelectedLandForScript(updatedLands[0] || null);
+    }
+    setLandToDelete(null);
   };
 
   const handleRunDocAudit = async (doc: LandDocument) => {
@@ -756,14 +796,17 @@ export default function ExpansionModule() {
                 key={land.id}
                 className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 hover:border-red-300 transition space-y-4"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
                         {land.zoning}
                       </span>
                       <span className="text-[10px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200">
                         Viabilidade IA: {land.viabilityScore}%
+                      </span>
+                      <span className="text-[10px] font-bold bg-purple-50 text-purple-800 px-2 py-0.5 rounded-md border border-purple-200 uppercase">
+                        {land.stage.replace(/_/g, " ")}
                       </span>
                     </div>
                     <h4 className="text-base font-bold text-slate-900">{land.title}</h4>
@@ -773,13 +816,35 @@ export default function ExpansionModule() {
                     </p>
                   </div>
 
-                  <div className="text-right sm:text-right">
-                    <span className="text-xs text-slate-400 font-medium block">
-                      VGV Estimado:
-                    </span>
-                    <span className="text-lg font-black text-red-700">
-                      {land.estimatedVgv}
-                    </span>
+                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                    <div className="text-left sm:text-right">
+                      <span className="text-xs text-slate-400 font-medium block">
+                        VGV Estimado:
+                      </span>
+                      <span className="text-lg font-black text-red-700">
+                        {land.estimatedVgv}
+                      </span>
+                    </div>
+
+                    {/* Action Buttons: Alterar (Edit) & Excluir (Delete) */}
+                    <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
+                      <button
+                        onClick={() => handleStartEditLand(land)}
+                        className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition border border-slate-200 hover:border-blue-200 flex items-center gap-1 text-xs font-semibold"
+                        title="Alterar / Editar Terreno"
+                      >
+                        <Edit3 className="h-3.5 w-3.5 text-blue-600" />
+                        <span className="text-blue-700">Alterar</span>
+                      </button>
+                      <button
+                        onClick={() => setLandToDelete(land)}
+                        className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition border border-slate-200 hover:border-red-200 flex items-center gap-1 text-xs font-semibold"
+                        title="Excluir Terreno"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-red-600" />
+                        <span className="text-red-700">Excluir</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -984,6 +1049,284 @@ export default function ExpansionModule() {
                       <Sparkles className="h-4 w-4" />
                     )}
                     <span>Gerar Viabilidade & Salvar</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Land Modal */}
+          {editingLand && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-xl w-full shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <Edit3 className="h-5 w-5 text-red-600" />
+                    Alterar / Editar Oportunidade
+                  </h3>
+                  <button
+                    onClick={() => setEditingLand(null)}
+                    className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Identificação / Título do Terreno:
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLand.title}
+                      onChange={(e) => setEditingLand({ ...editingLand, title: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700 block mb-1">Endereço:</label>
+                      <input
+                        type="text"
+                        value={editingLand.address}
+                        onChange={(e) => setEditingLand({ ...editingLand, address: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">Bairro:</label>
+                      <input
+                        type="text"
+                        value={editingLand.neighborhood}
+                        onChange={(e) =>
+                          setEditingLand({ ...editingLand, neighborhood: e.target.value })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">Cidade:</label>
+                      <input
+                        type="text"
+                        value={editingLand.city}
+                        onChange={(e) => setEditingLand({ ...editingLand, city: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">Área (m²):</label>
+                      <input
+                        type="number"
+                        value={editingLand.areaSqm}
+                        onChange={(e) =>
+                          setEditingLand({
+                            ...editingLand,
+                            areaSqm: Number(e.target.value) || 0
+                          })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">Zoneamento:</label>
+                      <input
+                        type="text"
+                        value={editingLand.zoning}
+                        onChange={(e) => setEditingLand({ ...editingLand, zoning: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        VGV Estimado:
+                      </label>
+                      <input
+                        type="text"
+                        value={editingLand.estimatedVgv}
+                        onChange={(e) =>
+                          setEditingLand({ ...editingLand, estimatedVgv: e.target.value })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-bold text-red-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Preço Pedido:
+                      </label>
+                      <input
+                        type="text"
+                        value={editingLand.askingPrice}
+                        onChange={(e) =>
+                          setEditingLand({ ...editingLand, askingPrice: e.target.value })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Proprietário / Herdeiros:
+                      </label>
+                      <input
+                        type="text"
+                        value={editingLand.ownerName}
+                        onChange={(e) =>
+                          setEditingLand({ ...editingLand, ownerName: e.target.value })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Perfil Proprietário:
+                      </label>
+                      <select
+                        value={editingLand.ownerType}
+                        onChange={(e) =>
+                          setEditingLand({ ...editingLand, ownerType: e.target.value as any })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium"
+                      >
+                        <option value="HERDEIROS_FAMILIA">Família / Herdeiros</option>
+                        <option value="PROPRIETARIO_UNICO">Proprietário Único</option>
+                        <option value="EMPRESA_SOCIOS">Empresa / Sócios</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Modelo Acordo:
+                      </label>
+                      <select
+                        value={editingLand.dealType}
+                        onChange={(e) =>
+                          setEditingLand({ ...editingLand, dealType: e.target.value as any })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium"
+                      >
+                        <option value="PERMUTA_FISICA">Permuta Física</option>
+                        <option value="PERMUTA_FINANCEIRA">Permuta Financeira</option>
+                        <option value="COMPRA_DIRETA">Compra Direta</option>
+                        <option value="MISTA">Estrutura Mista</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">% Permuta:</label>
+                      <input
+                        type="number"
+                        value={editingLand.swapPercentage}
+                        onChange={(e) =>
+                          setEditingLand({
+                            ...editingLand,
+                            swapPercentage: Number(e.target.value) || 0
+                          })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Estágio Pipeline:
+                      </label>
+                      <select
+                        value={editingLand.stage}
+                        onChange={(e) =>
+                          setEditingLand({ ...editingLand, stage: e.target.value as any })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium"
+                      >
+                        <option value="DESCOBERTA">Descoberta</option>
+                        <option value="CONTATO_PROPRIETARIO">Contato Proprietário</option>
+                        <option value="ANALISE_TECNICA">Análise Técnica</option>
+                        <option value="PROPOSTA_ENVIADA">Proposta Enviada</option>
+                        <option value="EM_NEGOCIACAO">Em Negociação</option>
+                        <option value="FECHADO">Fechado</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Observações de Negociação:
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editingLand.notes}
+                      onChange={(e) => setEditingLand({ ...editingLand, notes: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex gap-2">
+                  <button
+                    onClick={() => setEditingLand(null)}
+                    className="flex-1 py-2.5 px-3 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveEditedLand}
+                    className="flex-1 py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-md"
+                  >
+                    <Check className="h-4 w-4" />
+                    <span>Salvar Alterações</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Land Confirmation Modal */}
+          {landToDelete && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center gap-3 text-red-600">
+                  <div className="p-3 bg-red-100 rounded-full shrink-0">
+                    <Trash2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">Excluir Terreno</h3>
+                    <p className="text-xs text-slate-500">
+                      Esta ação removerá o terreno da lista de captação.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-1">
+                  <p className="font-bold text-slate-900">{landToDelete.title}</p>
+                  <p className="text-slate-500">
+                    {landToDelete.address} - {landToDelete.neighborhood} ({landToDelete.city})
+                  </p>
+                  <p className="text-slate-500">
+                    VGV: <strong className="text-red-700">{landToDelete.estimatedVgv}</strong>
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setLandToDelete(null)}
+                    className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmDeleteLand}
+                    className="flex-1 py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition shadow-md"
+                  >
+                    Confirmar Exclusão
                   </button>
                 </div>
               </div>
