@@ -131,5 +131,5 @@ npm start
 
 Desenvolvido por **Aldo Santos (Paes Valmont)**  
 * Especialista em Inteligência Imobiliária & Soluções PropTech.
-* Conecte-se comigo no [LinkedIn](https://www.linkedin.com/in/paes-valmont/).
+* Conecte-se comigo no [LinkedIn](www.linkedin.com/in/aldo-santos-80a409106/).
 
