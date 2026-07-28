@@ -16,15 +16,56 @@ export default function App() {
   // Top level active module state: "LEAD_QUALIFICATION" or "EXPANSION_INCORPORADORA"
   const [activeModule, setActiveModule] = useState<
     "LEAD_QUALIFICATION" | "EXPANSION_INCORPORADORA"
-  >("EXPANSION_INCORPORADORA");
+  >(() => {
+    try {
+      const saved = localStorage.getItem("proptech_active_module");
+      if (saved === "LEAD_QUALIFICATION" || saved === "EXPANSION_INCORPORADORA") {
+        return saved;
+      }
+    } catch (e) {}
+    return "EXPANSION_INCORPORADORA";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("proptech_active_module", activeModule);
+    } catch (e) {}
+  }, [activeModule]);
 
   // Config state for Lead Qualification simulator
-  const [agentName, setAgentName] = useState<string>("Aldo Santos");
-  const [region, setRegion] = useState<string>("São Paulo e Região");
-  const [propertyName, setPropertyName] = useState<string>("Concept Jardins");
+  const [agentName, setAgentName] = useState<string>(() => {
+    return localStorage.getItem("proptech_agent_name") || "Aldo Santos";
+  });
+  const [region, setRegion] = useState<string>(() => {
+    return localStorage.getItem("proptech_region") || "São Paulo e Região";
+  });
+  const [propertyName, setPropertyName] = useState<string>(() => {
+    return localStorage.getItem("proptech_property_name") || "Concept Jardins";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("proptech_agent_name", agentName);
+      localStorage.setItem("proptech_region", region);
+      localStorage.setItem("proptech_property_name", propertyName);
+    } catch (e) {}
+  }, [agentName, region, propertyName]);
 
   // Chat conversation state
-  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [history, setHistory] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem("proptech_chat_history");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("proptech_chat_history", JSON.stringify(history));
+    } catch (e) {}
+  }, [history]);
+
   const [inputText, setInputText] = useState<string>("");
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);

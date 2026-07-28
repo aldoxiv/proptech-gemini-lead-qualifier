@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Building2,
   MapPin,
@@ -35,155 +35,296 @@ import {
   ExpansionStage
 } from "../types";
 
+// Initial Fallback Data
+const INITIAL_REGIONS: ExpansionRegion[] = [
+  {
+    id: "reg-1",
+    name: "Eixo Pinheiros & Rebouças",
+    city: "São Paulo - SP",
+    potentialScore: 94,
+    zoning: "ZEU (Eixo Estruturação Urbana)",
+    buildingRatio: 4.0,
+    estimatedVgv: "R$ 180.000.000",
+    pricePerSqm: "R$ 16.500/m²",
+    growthDrivers: [
+      "Proximidade da Estação de Metrô Fradique Coutinho",
+      "Alta demanda para residenciais compactos de alto padrão",
+      "Incentivos de Fachada Ativa e Uso Misto"
+    ],
+    demandLevel: "MUITO ALTA",
+    status: "FOCO_EXPANSAO"
+  },
+  {
+    id: "reg-2",
+    name: "Chácara Santo Antônio / Granja Julieta",
+    city: "São Paulo - SP",
+    potentialScore: 89,
+    zoning: "ZM (Zona Mista) / ZEU",
+    buildingRatio: 3.5,
+    estimatedVgv: "R$ 130.000.000",
+    pricePerSqm: "R$ 12.800/m²",
+    growthDrivers: [
+      "Polo corporativo consolidado com alta demanda locatícia",
+      "Nova ponte de acesso e infraestrutura cicloviária",
+      "Permuta atrativa para terrenos de herdeiros"
+    ],
+    demandLevel: "ALTA",
+    status: "FOCO_EXPANSAO"
+  },
+  {
+    id: "reg-3",
+    name: "Cambuí & Taquaral",
+    city: "Campinas - SP",
+    potentialScore: 86,
+    zoning: "ZCR-2 (Zona Corredor Res.)",
+    buildingRatio: 3.0,
+    estimatedVgv: "R$ 95.000.000",
+    pricePerSqm: "R$ 9.800/m²",
+    growthDrivers: [
+      "Lançamentos de luxo com conceito clube urbano",
+      "Público de renda elevada e polo tecnológico próximo"
+    ],
+    demandLevel: "ALTA",
+    status: "EM_ANALISE"
+  },
+  {
+    id: "reg-4",
+    name: "Barra da Tijuca (Jardim Oceânico)",
+    city: "Rio de Janeiro - RJ",
+    potentialScore: 82,
+    zoning: "ZR-3 / Uso Misto",
+    buildingRatio: 2.5,
+    estimatedVgv: "R$ 110.000.000",
+    pricePerSqm: "R$ 14.200/m²",
+    growthDrivers: [
+      "Perto do metrô e praia",
+      "Valorização constante de metragens médias-grandes"
+    ],
+    demandLevel: "MÉDIA",
+    status: "EM_ANALISE"
+  }
+];
+
+const INITIAL_LANDS: LandOpportunity[] = [
+  {
+    id: "land-101",
+    title: "Gleba / Loteamento Rebouças - 1.450m²",
+    address: "Av. Rebouças, 2100",
+    neighborhood: "Pinheiros",
+    city: "São Paulo - SP",
+    areaSqm: 1450,
+    frontageMeters: 32,
+    zoning: "ZEU - Zona Eixo",
+    maxBuildingAreaSqm: 5800,
+    estimatedVgv: "R$ 82.000.000",
+    askingPrice: "R$ 22.000.000",
+    ownerName: "Família Alcantara (5 Herdeiros)",
+    ownerType: "HERDEIROS_FAMILIA",
+    dealType: "PERMUTA_FISICA",
+    swapPercentage: 15,
+    viabilityScore: 92,
+    documentsStatus: "REGULAR",
+    stage: "EM_NEGOCIACAO",
+    lastUpdated: "Hoje às 10:15",
+    notes: "Proposta de permuta física de 15% entregue. Família interessada em receber unidades no VGV futuro."
+  },
+  {
+    id: "land-102",
+    title: "Esquina Comercial Santo Amaro - 980m²",
+    address: "Rua Américo Brasiliense, 1400",
+    neighborhood: "Chácara Santo Antônio",
+    city: "São Paulo - SP",
+    areaSqm: 980,
+    frontageMeters: 28,
+    zoning: "ZM - Zona Mista",
+    maxBuildingAreaSqm: 3430,
+    estimatedVgv: "R$ 48.000.000",
+    askingPrice: "R$ 13.500.000",
+    ownerName: "Construtora & Imobiliária S.A.",
+    ownerType: "EMPRESA_SOCIOS",
+    dealType: "PERMUTA_FINANCEIRA",
+    swapPercentage: 14,
+    viabilityScore: 87,
+    documentsStatus: "PENDENCIAS_LEVES",
+    stage: "ANALISE_TECNICA",
+    lastUpdated: "Ontem às 16:40",
+    notes: "Estudo de massa (EVTL) em elaboração pela engenharia. Requer certidão atualizada do 4º Registro de Imóveis."
+  },
+  {
+    id: "land-103",
+    title: "Terreno Miolo do Cambuí - 1.100m²",
+    address: "Rua Maria Monteiro, 820",
+    neighborhood: "Cambuí",
+    city: "Campinas - SP",
+    areaSqm: 1100,
+    frontageMeters: 25,
+    zoning: "ZCR-2",
+    maxBuildingAreaSqm: 3300,
+    estimatedVgv: "R$ 38.000.000",
+    askingPrice: "R$ 9.800.000",
+    ownerName: "Dr. Roberto Martins",
+    ownerType: "PROPRIETARIO_UNICO",
+    dealType: "COMPRA_DIRETA",
+    swapPercentage: 0,
+    viabilityScore: 79,
+    documentsStatus: "REGULAR",
+    stage: "CONTATO_PROPRIETARIO",
+    lastUpdated: "Há 2 dias",
+    notes: "Proprietário direto aceita 20% de sinal e saldo em 12 parcelas corrigidas."
+  }
+];
+
+const INITIAL_DOCUMENTS: LandDocument[] = [
+  {
+    id: "doc-1",
+    opportunityId: "land-101",
+    opportunityTitle: "Gleba Rebouças - 1.450m²",
+    docType: "MATRICULA_IMOVER",
+    status: "APROVADO",
+    analysisSummary: "Matrícula nº 148.920 livre de ônus e hipotecas. Cadeia filiatória 100% checada.",
+    updatedAt: "28/07/2026 09:30"
+  },
+  {
+    id: "doc-2",
+    opportunityId: "land-101",
+    opportunityTitle: "Gleba Rebouças - 1.450m²",
+    docType: "CERTIDAO_IPTU",
+    status: "APROVADO",
+    analysisSummary: "Certidão Negativa de Débitos de IPTU emitida pela Prefeitura SP sem pendências.",
+    updatedAt: "28/07/2026 09:32"
+  },
+  {
+    id: "doc-3",
+    opportunityId: "land-102",
+    opportunityTitle: "Esquina Santo Amaro - 980m²",
+    docType: "DIRETRIZES_ZONEAMENTO",
+    status: "ANALISANDO",
+    analysisSummary: "Consultando outorga onerosa e diretriz de preservação ambiental com órgão municipal.",
+    updatedAt: "27/07/2026 15:10"
+  },
+  {
+    id: "doc-4",
+    opportunityId: "land-102",
+    opportunityTitle: "Esquina Santo Amaro - 980m²",
+    docType: "TOMBAMENTO_PATRIMONIO",
+    status: "ALERTA",
+    analysisSummary: "Alerta de entorno enquadrado em raio de bem tombado pelo CONDEPHAAT. Exige aprovação especial.",
+    updatedAt: "27/07/2026 15:12"
+  }
+];
+
+const INITIAL_SYNC_LOGS: CrmSyncLog[] = [
+  {
+    id: "log-1",
+    timestamp: "28/07/2026 10:14:02",
+    system: "Sienge ERP",
+    recordsProcessed: 12,
+    status: "SINCRONIZADO",
+    notes: "Atualização automática de VGV e viabilidade técnica dos terrenos captados."
+  },
+  {
+    id: "log-2",
+    timestamp: "28/07/2026 09:00:00",
+    system: "Google Sheets Pro",
+    recordsProcessed: 12,
+    status: "SINCRONIZADO",
+    notes: "Sincronização com planilha da Diretoria de Expansão e Novos Negócios."
+  },
+  {
+    id: "log-3",
+    timestamp: "27/07/2026 18:30:15",
+    system: "Salesforce Real Estate",
+    recordsProcessed: 10,
+    status: "SINCRONIZADO",
+    notes: "Sync de leads de proprietários e status de negociação de permuta."
+  }
+];
+
 export default function ExpansionModule() {
   // Active Tab inside Expansion Module
   const [activeTab, setActiveTab] = useState<
     "REGIONS" | "LAND_FINDER" | "DOCUMENTS" | "CRM_SYNC" | "APPROACH_AI"
   >("REGIONS");
 
-  // Sample Expansion Regions Data
-  const [regions, setRegions] = useState<ExpansionRegion[]>([
-    {
-      id: "reg-1",
-      name: "Eixo Pinheiros & Rebouças",
-      city: "São Paulo - SP",
-      potentialScore: 94,
-      zoning: "ZEU (Eixo Estruturação Urbana)",
-      buildingRatio: 4.0,
-      estimatedVgv: "R$ 180.000.000",
-      pricePerSqm: "R$ 16.500/m²",
-      growthDrivers: [
-        "Proximidade da Estação de Metrô Fradique Coutinho",
-        "Alta demanda para residenciais compactos de alto padrão",
-        "Incentivos de Fachada Ativa e Uso Misto"
-      ],
-      demandLevel: "MUITO ALTA",
-      status: "FOCO_EXPANSAO"
-    },
-    {
-      id: "reg-2",
-      name: "Chácara Santo Antônio / Granja Julieta",
-      city: "São Paulo - SP",
-      potentialScore: 89,
-      zoning: "ZM (Zona Mista) / ZEU",
-      buildingRatio: 3.5,
-      estimatedVgv: "R$ 130.000.000",
-      pricePerSqm: "R$ 12.800/m²",
-      growthDrivers: [
-        "Polo corporativo consolidado com alta demanda locatícia",
-        "Nova ponte de acesso e infraestrutura cicloviária",
-        "Permuta atrativa para terrenos de herdeiros"
-      ],
-      demandLevel: "ALTA",
-      status: "FOCO_EXPANSAO"
-    },
-    {
-      id: "reg-3",
-      name: "Cambuí & Taquaral",
-      city: "Campinas - SP",
-      potentialScore: 86,
-      zoning: "ZCR-2 (Zona Corredor Res.)",
-      buildingRatio: 3.0,
-      estimatedVgv: "R$ 95.000.000",
-      pricePerSqm: "R$ 9.800/m²",
-      growthDrivers: [
-        "Lançamentos de luxo com conceito clube urbano",
-        "Público de renda elevada e polo tecnológico próximo"
-      ],
-      demandLevel: "ALTA",
-      status: "EM_ANALISE"
-    },
-    {
-      id: "reg-4",
-      name: "Barra da Tijuca (Jardim Oceânico)",
-      city: "Rio de Janeiro - RJ",
-      potentialScore: 82,
-      zoning: "ZR-3 / Uso Misto",
-      buildingRatio: 2.5,
-      estimatedVgv: "R$ 110.000.000",
-      pricePerSqm: "R$ 14.200/m²",
-      growthDrivers: [
-        "Perto do metrô e praia",
-        "Valorização constante de metragens médias-grandes"
-      ],
-      demandLevel: "MÉDIA",
-      status: "EM_ANALISE"
+  // Notification Toast Feedback
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
+
+  // Persistent Regions Data
+  const [regions, setRegions] = useState<ExpansionRegion[]>(() => {
+    try {
+      const saved = localStorage.getItem("proptech_regions");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
     }
-  ]);
+    return INITIAL_REGIONS;
+  });
+
+  // Persistent Land Opportunities Data
+  const [lands, setLands] = useState<LandOpportunity[]>(() => {
+    try {
+      const saved = localStorage.getItem("proptech_lands");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return INITIAL_LANDS;
+  });
+
+  // Persistent Documents Data
+  const [documents, setDocuments] = useState<LandDocument[]>(() => {
+    try {
+      const saved = localStorage.getItem("proptech_documents");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return INITIAL_DOCUMENTS;
+  });
+
+  // Persistent CRM Sync Logs Data
+  const [syncLogs, setSyncLogs] = useState<CrmSyncLog[]>(() => {
+    try {
+      const saved = localStorage.getItem("proptech_sync_logs");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return INITIAL_SYNC_LOGS;
+  });
+
+  // LocalStorage Sync Effects
+  useEffect(() => {
+    try {
+      localStorage.setItem("proptech_regions", JSON.stringify(regions));
+    } catch (e) {}
+  }, [regions]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("proptech_lands", JSON.stringify(lands));
+    } catch (e) {}
+  }, [lands]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("proptech_documents", JSON.stringify(documents));
+    } catch (e) {}
+  }, [documents]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("proptech_sync_logs", JSON.stringify(syncLogs));
+    } catch (e) {}
+  }, [syncLogs]);
 
   // AI Regional Scout input
   const [regionQuery, setRegionQuery] = useState("");
   const [isScoutingRegion, setIsScoutingRegion] = useState(false);
-
-  // Sample Land Opportunities Data
-  const [lands, setLands] = useState<LandOpportunity[]>([
-    {
-      id: "land-101",
-      title: "Gleba / Loteamento Rebouças - 1.450m²",
-      address: "Av. Rebouças, 2100",
-      neighborhood: "Pinheiros",
-      city: "São Paulo - SP",
-      areaSqm: 1450,
-      frontageMeters: 32,
-      zoning: "ZEU - Zona Eixo",
-      maxBuildingAreaSqm: 5800,
-      estimatedVgv: "R$ 82.000.000",
-      askingPrice: "R$ 22.000.000",
-      ownerName: "Família Alcantara (5 Herdeiros)",
-      ownerType: "HERDEIROS_FAMILIA",
-      dealType: "PERMUTA_FISICA",
-      swapPercentage: 15,
-      viabilityScore: 92,
-      documentsStatus: "REGULAR",
-      stage: "EM_NEGOCIACAO",
-      lastUpdated: "Hoje às 10:15",
-      notes: "Proposta de permuta física de 15% entregue. Família interessada em receber unidades no VGV futuro."
-    },
-    {
-      id: "land-102",
-      title: "Esquina Comercial Santo Amaro - 980m²",
-      address: "Rua Américo Brasiliense, 1400",
-      neighborhood: "Chácara Santo Antônio",
-      city: "São Paulo - SP",
-      areaSqm: 980,
-      frontageMeters: 28,
-      zoning: "ZM - Zona Mista",
-      maxBuildingAreaSqm: 3430,
-      estimatedVgv: "R$ 48.000.000",
-      askingPrice: "R$ 13.500.000",
-      ownerName: "Construtora & Imobiliária S.A.",
-      ownerType: "EMPRESA_SOCIOS",
-      dealType: "PERMUTA_FINANCEIRA",
-      swapPercentage: 14,
-      viabilityScore: 87,
-      documentsStatus: "PENDENCIAS_LEVES",
-      stage: "ANALISE_TECNICA",
-      lastUpdated: "Ontem às 16:40",
-      notes: "Estudo de massa (EVTL) em elaboração pela engenharia. Requer certidão atualizada do 4º Registro de Imóveis."
-    },
-    {
-      id: "land-103",
-      title: "Terreno Miolo do Cambuí - 1.100m²",
-      address: "Rua Maria Monteiro, 820",
-      neighborhood: "Cambuí",
-      city: "Campinas - SP",
-      areaSqm: 1100,
-      frontageMeters: 25,
-      zoning: "ZCR-2",
-      maxBuildingAreaSqm: 3300,
-      estimatedVgv: "R$ 38.000.000",
-      askingPrice: "R$ 9.800.000",
-      ownerName: "Dr. Roberto Martins",
-      ownerType: "PROPRIETARIO_UNICO",
-      dealType: "COMPRA_DIRETA",
-      swapPercentage: 0,
-      viabilityScore: 79,
-      documentsStatus: "REGULAR",
-      stage: "CONTATO_PROPRIETARIO",
-      lastUpdated: "Há 2 dias",
-      notes: "Proprietário direto aceita 20% de sinal e saldo em 12 parcelas corrigidas."
-    }
-  ]);
 
   // AI Land Viability Calculator Modal / State
   const [showAddLand, setShowAddLand] = useState(false);
@@ -196,7 +337,7 @@ export default function ExpansionModule() {
     zoning: "ZEU",
     dealType: "PERMUTA_FISICA" as const,
     ownerName: "",
-    ownerType: "HERDEIROS_FAMILIA" as const,
+    ownerType: "HERDEIROS_FAMILIA" as const
   });
   const [isAnalyzingLand, setIsAnalyzingLand] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<any | null>(null);
@@ -205,84 +346,38 @@ export default function ExpansionModule() {
   const [editingLand, setEditingLand] = useState<LandOpportunity | null>(null);
   const [landToDelete, setLandToDelete] = useState<LandOpportunity | null>(null);
 
-  // Sample Documents Data
-  const [documents, setDocuments] = useState<LandDocument[]>([
-    {
-      id: "doc-1",
-      opportunityId: "land-101",
-      opportunityTitle: "Gleba Rebouças - 1.450m²",
-      docType: "MATRICULA_IMOVER",
-      status: "APROVADO",
-      analysisSummary: "Matrícula nº 148.920 livre de ônus e hipotecas. Cadeia filiatória 100% checada.",
-      updatedAt: "28/07/2026 09:30"
-    },
-    {
-      id: "doc-2",
-      opportunityId: "land-101",
-      opportunityTitle: "Gleba Rebouças - 1.450m²",
-      docType: "CERTIDAO_IPTU",
-      status: "APROVADO",
-      analysisSummary: "Certidão Negativa de Débitos de IPTU emitida pela Prefeitura SP sem pendências.",
-      updatedAt: "28/07/2026 09:32"
-    },
-    {
-      id: "doc-3",
-      opportunityId: "land-102",
-      opportunityTitle: "Esquina Santo Amaro - 980m²",
-      docType: "DIRETRIZES_ZONEAMENTO",
-      status: "ANALISANDO",
-      analysisSummary: "Consultando outorga onerosa e diretriz de preservação ambiental com órgão municipal.",
-      updatedAt: "27/07/2026 15:10"
-    },
-    {
-      id: "doc-4",
-      opportunityId: "land-102",
-      opportunityTitle: "Esquina Santo Amaro - 980m²",
-      docType: "TOMBAMENTO_PATRIMONIO",
-      status: "ALERTA",
-      analysisSummary: "Alerta de entorno enquadrado em raio de bem tombado pelo CONDEPHAAT. Exige aprovação especial.",
-      updatedAt: "27/07/2026 15:12"
-    }
-  ]);
-
   // AI Document Auditor State
   const [auditingDocId, setAuditingDocId] = useState<string | null>(null);
   const [auditNotes, setAuditNotes] = useState("");
 
-  // Sample CRM Sync Logs
-  const [syncLogs, setSyncLogs] = useState<CrmSyncLog[]>([
-    {
-      id: "log-1",
-      timestamp: "28/07/2026 10:14:02",
-      system: "Sienge ERP",
-      recordsProcessed: 12,
-      status: "SINCRONIZADO",
-      notes: "Atualização automática de VGV e viabilidade técnica dos terrenos captados."
-    },
-    {
-      id: "log-2",
-      timestamp: "28/07/2026 09:00:00",
-      system: "Google Sheets Pro",
-      recordsProcessed: 12,
-      status: "SINCRONIZADO",
-      notes: "Sincronização com planilha da Diretoria de Expansão e Novos Negócios."
-    },
-    {
-      id: "log-3",
-      timestamp: "27/07/2026 18:30:15",
-      system: "Salesforce Real Estate",
-      recordsProcessed: 10,
-      status: "SINCRONIZADO",
-      notes: "Sync de leads de proprietários e status de negociação de permuta."
-    }
-  ]);
-
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Approach Script Generator State
-  const [selectedLandForScript, setSelectedLandForScript] = useState<LandOpportunity | null>(lands[0]);
+  const [selectedLandForScript, setSelectedLandForScript] = useState<LandOpportunity | null>(
+    lands[0] || null
+  );
   const [ownerScript, setOwnerScript] = useState<any | null>(null);
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+
+  // Reset to Defaults
+  const handleRestoreDefaults = () => {
+    if (
+      window.confirm(
+        "Tem certeza que deseja restaurar os dados padrões de demonstração? Suas alterações salvas no navegador serão reiniciadas."
+      )
+    ) {
+      localStorage.removeItem("proptech_regions");
+      localStorage.removeItem("proptech_lands");
+      localStorage.removeItem("proptech_documents");
+      localStorage.removeItem("proptech_sync_logs");
+      setRegions(INITIAL_REGIONS);
+      setLands(INITIAL_LANDS);
+      setDocuments(INITIAL_DOCUMENTS);
+      setSyncLogs(INITIAL_SYNC_LOGS);
+      setSelectedLandForScript(INITIAL_LANDS[0]);
+      showToast("🔄 Dados de demonstração restaurados com sucesso!");
+    }
+  };
 
   // Handlers
   const handleScoutRegion = async () => {
@@ -309,6 +404,7 @@ export default function ExpansionModule() {
       setRegions([newReg, ...regions]);
       setRegionQuery("");
       setIsScoutingRegion(false);
+      showToast(`📍 Nova região "${newReg.name}" mapeada e salvação mantida!`);
     }, 1200);
   };
 
@@ -358,8 +454,22 @@ export default function ExpansionModule() {
       };
 
       setLands([addedLand, ...lands]);
+      setShowAddLand(false);
+      setNewLand({
+        title: "",
+        address: "",
+        neighborhood: "",
+        city: "São Paulo - SP",
+        areaSqm: "1200",
+        zoning: "ZEU",
+        dealType: "PERMUTA_FISICA",
+        ownerName: "",
+        ownerType: "HERDEIROS_FAMILIA"
+      });
+      showToast(`✨ Terreno "${addedLand.title}" cadastrado e salvo com sucesso!`);
     } catch (e) {
       console.error(e);
+      showToast("❌ Erro ao analisar terreno. Tente novamente.");
     } finally {
       setIsAnalyzingLand(false);
     }
@@ -387,16 +497,19 @@ export default function ExpansionModule() {
       setSelectedLandForScript(updated);
     }
     setEditingLand(null);
+    showToast(`💾 Alterações do terreno "${updated.title}" salvas com sucesso!`);
   };
 
   const handleConfirmDeleteLand = () => {
     if (!landToDelete) return;
+    const deletedTitle = landToDelete.title;
     const updatedLands = lands.filter((l) => l.id !== landToDelete.id);
     setLands(updatedLands);
     if (selectedLandForScript?.id === landToDelete.id) {
       setSelectedLandForScript(updatedLands[0] || null);
     }
     setLandToDelete(null);
+    showToast(`🗑️ Terreno "${deletedTitle}" excluído com sucesso!`);
   };
 
   const handleRunDocAudit = async (doc: LandDocument) => {
@@ -640,6 +753,29 @@ export default function ExpansionModule() {
           <span>5. Roteiro de Abordagem</span>
         </button>
       </div>
+
+      {/* PERSISTENCE STATUS BADGE & TOAST NOTIFICATION */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-100/90 p-3 rounded-2xl border border-slate-200 text-xs text-slate-600 shadow-xs">
+        <div className="flex items-center gap-2">
+          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+          <span className="font-bold text-slate-800">
+            💾 Armazenamento Ativo:
+          </span>
+          <span>Todas as suas inclusões, alterações de terrenos e cadastros são salvas permanentemente no seu navegador.</span>
+        </div>
+        <button
+          onClick={handleRestoreDefaults}
+          className="text-xs font-bold text-slate-500 hover:text-red-600 hover:underline transition self-start sm:self-auto shrink-0"
+        >
+          Restaurar Dados Padrão
+        </button>
+      </div>
+
+      {toastMsg && (
+        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-2">
+          <span>{toastMsg}</span>
+        </div>
+      )}
 
       {/* TAB 1: REGIONS & EXPANSION POTENTIAL */}
       {activeTab === "REGIONS" && (
