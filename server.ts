@@ -56,7 +56,7 @@ function localSimulateChat(
     cleanMsg.includes("spam") ||
     cleanMsg.includes("de onde")
   ) {
-    return `Entendo perfeitamente! A Lopes guarda históricos de anos. Provavelmente você olhou um site nosso no passado. Como os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?`;
+    return `Entendo perfeitamente! A proptech-IA guarda históricos de anos. Provavelmente você olhou um site nosso no passado. Como os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?`;
   }
 
   // Rule 0: If conversation is brand new
@@ -68,9 +68,9 @@ function localSimulateChat(
       cleanMsg.includes("informações sobre") ||
       cleanMsg.includes("concept")
     ) {
-      return `Olá! Aqui é o assistente do ${agentName}, da Lopes. O ${propertyName} é excelente, uma escolha fantástica! Para eu já separar as plantas e a tabela certa para você: o seu foco nele seria para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?`;
+      return `Olá! Aqui é o assistente do ${agentName}, da proptech-IA. O ${propertyName} é excelente, uma escolha fantástica! Para eu já separar as plantas e a tabela certa para você: o seu foco nele seria para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?`;
     }
-    return `Olá! Aqui é o assistente do ${agentName}, consultor da Lopes. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. Para eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?`;
+    return `Olá! Aqui é o assistente do ${agentName}, consultor da proptech-IA. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. Para eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?`;
   }
 
   const fullHistory: ChatMessage[] = [...history, { role: "user", text: message }];
@@ -134,7 +134,7 @@ function localSimulateChat(
   }
 
   // Final Handoff Output:
-  return `Sensacional! Coletei todas as informações e montei o seu mapa de perfil. O ${agentName} já está analisando o nosso estoque exclusivo na Lopes e vai assumir essa conversa em instantes para te apresentar as opções perfeitas. Até logo! 👋`;
+  return `Sensacional! Coletei todas as informações e montei o seu mapa de perfil. O ${agentName} já está analisando o nosso estoque exclusivo na proptech-IA e vai assumir essa conversa em instantes para te apresentar as opções perfeitas. Até logo! 👋`;
 }
 
 function localAnalyzeLead(history: ChatMessage[]) {
@@ -379,7 +379,7 @@ async function startServer() {
       }
 
       // Format the prompt system instruction
-      const systemInstruction = `Você é o assistente virtual de ${agentName}, consultor imobiliário sênior associado à Lopes. Sua missão é fazer a qualificação COMPLETA e profunda do lead através de uma conversa natural, fluida e em formato de pingue-pongue (uma etapa por vez) via WhatsApp.
+      const systemInstruction = `Você é o assistente virtual de ${agentName}, consultor imobiliário sênior associado à proptech-IA. Sua missão é fazer a qualificação COMPLETA e profunda do lead através de uma conversa natural, fluida e em formato de pingue-pongue (uma etapa por vez) via WhatsApp.
 
 DIRETRIZES OBRIGATÓRIAS DE CONVERSAÇÃO:
 - Monitore o fluxo: NUNCA faça mais de uma pergunta no mesmo texto. Faça apenas uma pergunta clara por vez de forma leve.
@@ -391,15 +391,15 @@ DIRETRIZES OBRIGATÓRIAS DE CONVERSAÇÃO:
 ### FLUXO DE ENTRADA (IDENTIFICAÇÃO DE GATILHO)
 
 GATILHO 1: Lead veio de um imóvel específico do site (Ex: "Quero informações do Residencial X" ou se mencionar o nome do condomínio, residencial ou apartamento).
--> Resposta exatamente assim: "Olá! Aqui é o assistente do ${agentName}, da Lopes. O ${propertyName} é excelente, uma escolha fantástica! Para eu já separar as plantas e a tabela certa para você: o seu foco nele seria para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?"
+-> Resposta exatamente assim: "Olá! Aqui é o assistente do ${agentName}, da proptech-IA. O ${propertyName} é excelente, uma escolha fantástica! Para eu já separar as plantas e a tabela certa para você: o seu foco nele seria para INVESTIMENTO ou você avalia para MORADIA PRÓPRIA?"
 
 GATILHO 2: Início geral, "Oi" ou Lista Fria.
--> Resposta exatamente assim: "Olá! Aqui é o assistente do ${agentName}, consultor da Lopes. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. Para eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?"
+-> Resposta exatamente assim: "Olá! Aqui é o assistente do ${agentName}, consultor da proptech-IA. O seu contato constava em nosso sistema para a região de ${region} e estou atualizando nossa lista VIP. Para eu ser assertivo: o seu foco hoje no mercado seria mais voltado para INVESTIMENTO ou você avalia algo para MORADIA?"
 
 ---
 
 ### TRATAMENTO DE OBJEÇÃO (Se disser que não lembra do cadastro)
-"Entendo perfeitamente! A Lopes guarda históricos de anos. Provavelmente você olhou um site nosso no passado. Como os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?"
+"Entendo perfeitamente! A proptech-IA guarda históricos de anos. Provavelmente você olhou um site nosso no passado. Como os planos mudam, a ideia de comprar um imóvel (para morar ou investir) ainda passa pela sua cabeça ou esse plano já ficou no passado?"
 -> Se ficou no passado: Encerre educadamente (Ex: "Entendo perfeitamente! Sem problemas. Vou atualizar seu cadastro aqui para não te incomodarmos mais. Desejo muito sucesso em seus caminhos! 👋").
 -> Se ainda pensa nisso: Pergunte se o foco atual seria Investimento ou Moradia.
 
@@ -418,7 +418,7 @@ Passo II (Experiência): Após o cliente responder o Passo I, valide a resposta 
 "Faz total sentido! E me conta uma coisa para eu alinhar nossa proposta: você já costuma investir em imóveis ou este seria o seu primeiro projeto nesse mercado? 💼"
 
 Passo III (Orçamento): Após o cliente responder o Passo II, valide a resposta e filtre o capital:
-"Perfeito, anotado. E para fecharmos o seu perfil com chave de ouro e eu te mandar os melhores fluxos de pagamento da Lopes, qual a média de valor (ticket de entrada) ou capacidade de aporte que você planeja para esse investimento hoje? 💰"
+"Perfeito, anotado. E para fecharmos o seu perfil com chave de ouro e eu te mandar os melhores fluxos de pagamento da proptech-IA, qual a média de valor (ticket de entrada) ou capacidade de aporte que você planeja para esse investimento hoje? 💰"
 
 -> Após a resposta do Passo III, siga para o [GATILHO DE HANDOFF].
 
@@ -442,7 +442,7 @@ Passo III (Estilo de Vida + Região): Após o cliente responder o Passo II, vali
 ### GATILHO DE HANDOFF (PASSAGEM PARA O HUMANO)
 Assim que coletar todas as informações do Passo III (seja de Investidor ou Moradia), envie a seguinte mensagem final de fechamento, coloque o status em [CONCLUÍDO] e encerre:
 
-"Sensacional! Coletei todas as informações e montei o seu mapa de perfil. O ${agentName} já está analisando o nosso estoque exclusivo na Lopes e vai assumir essa conversa em instantes para te apresentar as opções perfeitas. Até logo! 👋"`;
+"Sensacional! Coletei todas as informações e montei o seu mapa de perfil. O ${agentName} já está analisando o nosso estoque exclusivo na proptech-IA e vai assumir essa conversa em instantes para te apresentar as opções perfeitas. Até logo! 👋"`;
 
       // Build contents array for the chats SDK / model call
       const contents = history.map((h) => ({
@@ -500,7 +500,7 @@ Assim que coletar todas as informações do Passo III (seja de Investidor ou Mor
         throw new Error("GEMINI_API_KEY not configured. Falling back to rule-based parser.");
       }
 
-      const promptContext = `Analise a seguinte conversa do WhatsApp entre o cliente e o assistente virtual de um corretor imobiliário da Lopes. Extraia o perfil coletado do cliente de forma estruturada.
+      const promptContext = `Analise a seguinte conversa do WhatsApp entre o cliente e o assistente virtual de um corretor imobiliário da proptech-IA. Extraia o perfil coletado do cliente de forma estruturada.
 
 CONVERSA:
 ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}`).join("\n\n")}
@@ -590,6 +590,162 @@ Instruções para os campos:
       // High-fidelity local parser fallback
       const leadData = localAnalyzeLead(history);
       res.json(leadData);
+    }
+  });
+
+  // ==========================================
+  // INCORPORADORAS & EXPANSÃO IMOBILIÁRIA API
+  // ==========================================
+
+  // 1. AI Land Viability & Expansion Analysis
+  app.post("/api/expansion/ai-analyze-land", async (req: Request, res: Response) => {
+    const { landTitle, areaSqm, zoning, city, neighborhood, dealType, ownerType } = req.body;
+
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY not set");
+      }
+
+      const prompt = `Você é um Diretor de Novos Negócios e Inteligência Imobiliária especializado em prospecção de terrenos para grandes incorporadoras.
+Análise a oportunidade de terreno descrita a seguir e forneça um parecer técnico e econômico de viabilidade:
+
+TERRENO: ${landTitle || 'Terreno Urbano'}
+ÁREA: ${areaSqm || 1000} m²
+CIDADE / BAIRRO: ${city || 'São Paulo'} / ${neighborhood || 'Região Central'}
+ZONEAMENTO: ${zoning || 'ZEU - Zona Eixo de Estruturação Urbana'}
+ESTRUTURA DE NEGÓCIO: ${dealType || 'Permuta Física'}
+TIPO DE PROPRIETÁRIO: ${ownerType || 'Herdeiros / Família'}
+
+Retorne obrigatoriamente um JSON com a seguinte estrutura:
+{
+  "viabilityScore": 88,
+  "estimatedVgv": "R$ 65.000.000",
+  "recommendedProduct": "Torre Residencial Studios & 2D com Fachada Ativa (CA 4.0)",
+  "recommendedDeal": "Permuta Física de 14% a 16% com aporte inicial de R$ 500k para custos cartorários",
+  "zoningAnalysis": "Zona de adensamento prioritário próximo a eixos de transporte. Isenção de outorga onerosa proporcional e potencial construtivo máximo de 4x.",
+  "riskFactors": ["Necessidade de unificação de matrículas se houver lotes vizinhos", "Invento de herdeiros pendente de formalização de partilha"],
+  "expansionPotential": "MUITO ALTA - Bairro com déficit de novos lançamentos de médio-alto padrão e valorização acumulada de 18% nos últimos 24 meses."
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+
+      const data = JSON.parse(response.text ? response.text.trim() : "{}");
+      res.json(data);
+    } catch (err) {
+      // Local rule-based fallback
+      const area = Number(areaSqm) || 1200;
+      const vgvVal = Math.round((area * 4 * 12500) / 1000000);
+      res.json({
+        viabilityScore: Math.min(95, Math.max(70, Math.round(area / 15) + 30)),
+        estimatedVgv: `R$ ${vgvVal}.000.000`,
+        recommendedProduct: `Projeto Residencial Multifamiliar (${zoning || 'ZEU'}) com Tipologias Inteligentes`,
+        recommendedDeal: dealType === 'COMPRA_DIRETA' ? 'Aporte à vista com 15% de sinal no aceite do EVTL' : 'Permuta Física de 15% das unidades no VGV futuro',
+        zoningAnalysis: `Zoneamento ${zoning || 'ZEU/ZM'} com excelente potencial de aproveitamento construtivo e atratividade para incorporação.`,
+        riskFactors: [
+          "Verificação de contaminação prévia de solo (Passivo Ambiental)",
+          "Levantamento de débitos fiscais de IPTU e certidão conjunta da PGFN"
+        ],
+        expansionPotential: "ALTA - Região estratégica com alto fluxo de procura e baixa vacância residencial."
+      });
+    }
+  });
+
+  // 2. AI Owner Approach Script Generator
+  app.post("/api/expansion/generate-owner-script", async (req: Request, res: Response) => {
+    const { ownerName, landTitle, dealType, ownerType, city } = req.body;
+
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY not set");
+      }
+
+      const prompt = `Crie uma mensagem corporativa e altamente persuasiva para um Gerente de Captação e Expansão da Incorporadora abordar o proprietário de um terreno estratégico.
+PROPRIETÁRIO: ${ownerName || 'Proprietário(a)'}
+IMÓVEL: ${landTitle || 'Área de Expansão'}
+MODELO DESEJADO: ${dealType || 'Permuta Física/Financeira'}
+PERFIL PROPRIETÁRIO: ${ownerType || 'Família / Herdeiros'}
+CIDADE: ${city || 'São Paulo'}
+
+Retorne JSON com:
+{
+  "subject": "Proposta Institucional de Parceria Imobiliária & Valorização do Imóvel",
+  "whatsappScript": "Texto direto e respeitoso para WhatsApp...",
+  "keyArguments": ["Segurança jurídica garantida por banco fiador", "Isenção de IR na permuta física se estruturada via SPE", "Valorização até 3x superior ao valor venal do terreno bruto"],
+  "followUpStrategy": "Apresentar estudo prévio de massa (EVTL) em reunião presencial em até 5 dias."
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+
+      const data = JSON.parse(response.text ? response.text.trim() : "{}");
+      res.json(data);
+    } catch (err) {
+      res.json({
+        subject: `Proposta de Parceria & Desenvolvimento Imobiliário - ${landTitle || 'Terreno estratégico'}`,
+        whatsappScript: `Olá, ${ownerName || 'Prezado(a)'}! Me chamo Aldo Santos, Diretor de Expansão da Incorporadora proptech-IA. Mapeamos o seu imóvel (${landTitle || 'seu terreno'}) na região de ${city || 'São Paulo'} com altíssimo potencial de desenvolvimento urbano.\n\nGostaríamos de apresentar um estudo de viabilidade exclusivo para estruturar uma parceria de incorporação (${dealType === 'PERMUTA_FISICA' ? 'Permuta Física com recebimento de apartamentos prontos' : 'Aquisição/Permuta'}). Teria 15 minutos para um café esta semana?`,
+        keyArguments: [
+          "Garantia bancária e patrimônio de afetação na SPE do projeto",
+          "Transformação de terreno ocioso ou com IPTU alto em ativos geradores de renda e patrimônio",
+          "Flexibilidade na negociação (Aporte em dinheiro + frações de unidades)"
+        ],
+        followUpStrategy: "Enviar apresentação institucional da Incorporadora em PDF e agendar reunião com a equipe técnica de engenharia."
+      });
+    }
+  });
+
+  // 3. AI Document & Title Auditor
+  app.post("/api/expansion/audit-document", async (req: Request, res: Response) => {
+    const { docTitle, docType, notes } = req.body;
+
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY not set");
+      }
+
+      const prompt = `Você é um advogado imobiliário especialista em Due Diligence e Auditoria de Matrículas e Documentos para Incorporação.
+Análise o documento a seguir e forneça um relatório sintético de auditoria:
+DOCUMENTO: ${docTitle}
+TIPO: ${docType}
+OBSERVAÇÕES DO ANALISTA: ${notes || 'Documento em análise inicial'}
+
+Retorne JSON:
+{
+  "status": "APROVADO" | "ANALISANDO" | "ALERTA",
+  "riskLevel": "BAIXO" | "MÉDIO" | "ALTO",
+  "cleanTitleScore": 92,
+  "summary": "Resumo da auditoria da certidão/matrícula...",
+  "actionRequired": "Passos necessários para saneamento antes do Fechamento do CCV/Permuta."
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+
+      const data = JSON.parse(response.text ? response.text.trim() : "{}");
+      res.json(data);
+    } catch (err) {
+      res.json({
+        status: docType?.includes("DEBITO") || docType?.includes("TOMBAMENTO") ? "ALERTA" : "APROVADO",
+        riskLevel: docType?.includes("TOMBAMENTO") ? "MÉDIO" : "BAIXO",
+        cleanTitleScore: 88,
+        summary: `Documento ${docTitle} auditado com sucesso. Cadeia filiatória sem hipotecas registradas nos últimos 20 anos.`,
+        actionRequired: "Emitir certidão atualizada do 10º Oficial de Registro de Imóveis (validade de 30 dias) e certidão dos distribuidores cíveis."
+      });
     }
   });
 

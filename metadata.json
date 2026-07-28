@@ -1,6 +1,6 @@
 {
-  "name": "Assistente Lopes - Qualificação de Leads",
-  "description": "Simulador interativo de assistente virtual para corretores da Lopes qualificarem clientes via WhatsApp de forma leve e rápida, com extração de perfil em tempo real.",
+  "name": "proptech-IA - Hub de Expansão & Qualificação Imobiliária",
+  "description": "Plataforma Inteligente para Corretores e Incorporadoras: Qualificação de Leads via WhatsApp e Módulo IA para Captação de Terrenos, Análise Regional e Validação Documental.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
