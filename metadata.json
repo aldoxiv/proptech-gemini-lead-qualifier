@@ -1,5 +1,5 @@
 {
-  "name": "proptech-IA - Intelligence Platform",
+  "name": "proptech-ia-intelligence-platform",
   "description": "Plataforma Inteligente para Corretores e Incorporadoras: Qualificação de Leads via WhatsApp e Módulo IA para Captação de Terrenos, Análise Regional e Validação Documental.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
