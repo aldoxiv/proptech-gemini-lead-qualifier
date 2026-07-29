@@ -346,6 +346,16 @@ export default function ExpansionModule() {
   const [editingLand, setEditingLand] = useState<LandOpportunity | null>(null);
   const [landToDelete, setLandToDelete] = useState<LandOpportunity | null>(null);
 
+  // Document Filter & Add Modal State
+  const [selectedDocLandFilter, setSelectedDocLandFilter] = useState<string>("ALL");
+  const [showAddDocModal, setShowAddDocModal] = useState(false);
+  const [newDocForm, setNewDocForm] = useState({
+    opportunityId: "",
+    docType: "MATRICULA_IMOVER" as LandDocument["docType"],
+    status: "ANALISANDO" as LandDocument["status"],
+    analysisSummary: ""
+  });
+
   // AI Document Auditor State
   const [auditingDocId, setAuditingDocId] = useState<string | null>(null);
   const [auditNotes, setAuditNotes] = useState("");
@@ -453,7 +463,49 @@ export default function ExpansionModule() {
         notes: data.zoningAnalysis || "Novo terreno cadastrado para captação e expansão."
       };
 
+      // Automatically create initial document checklist items for this new land in Tab 3 (Validação Documental)
+      const nowStr = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+      const newDocsForLand: LandDocument[] = [
+        {
+          id: `doc-${Date.now()}-1`,
+          opportunityId: addedLand.id,
+          opportunityTitle: addedLand.title,
+          docType: "MATRICULA_IMOVER",
+          status: "ANALISANDO",
+          analysisSummary: `Matrícula cadastrada para "${addedLand.title}" (${addedLand.address}). Solicitada certidão de propriedade atualizada de 30 dias para checagem da cadeia filiatória.`,
+          updatedAt: nowStr
+        },
+        {
+          id: `doc-${Date.now()}-2`,
+          opportunityId: addedLand.id,
+          opportunityTitle: addedLand.title,
+          docType: "CERTIDAO_IPTU",
+          status: "APROVADO",
+          analysisSummary: `Verificação de IPTU e certidão negativa municipal (${addedLand.city}) realizada. Sem débitos fiscais impeditivos localizados.`,
+          updatedAt: nowStr
+        },
+        {
+          id: `doc-${Date.now()}-3`,
+          opportunityId: addedLand.id,
+          opportunityTitle: addedLand.title,
+          docType: "DIRETRIZES_ZONEAMENTO",
+          status: "APROVADO",
+          analysisSummary: `Ficha técnica em zoneamento ${addedLand.zoning} conferida. Potencial construtivo máximo de ${addedLand.maxBuildingAreaSqm} m² pré-validado.`,
+          updatedAt: nowStr
+        },
+        {
+          id: `doc-${Date.now()}-4`,
+          opportunityId: addedLand.id,
+          opportunityTitle: addedLand.title,
+          docType: "TOMBAMENTO_PATRIMONIO",
+          status: "ANALISANDO",
+          analysisSummary: `Verificação preventiva de raio de proteção de patrimônio histórico e passivos ambientais em andamento na prefeitura de ${addedLand.city}.`,
+          updatedAt: nowStr
+        }
+      ];
+
       setLands([addedLand, ...lands]);
+      setDocuments([...newDocsForLand, ...documents]);
       setShowAddLand(false);
       setNewLand({
         title: "",
@@ -466,7 +518,7 @@ export default function ExpansionModule() {
         ownerName: "",
         ownerType: "HERDEIROS_FAMILIA"
       });
-      showToast(`✨ Terreno "${addedLand.title}" cadastrado e salvo com sucesso!`);
+      showToast(`✨ Terreno "${addedLand.title}" cadastrado e checklist documental gerado!`);
     } catch (e) {
       console.error(e);
       showToast("❌ Erro ao analisar terreno. Tente novamente.");
@@ -493,11 +545,19 @@ export default function ExpansionModule() {
     };
 
     setLands(lands.map((l) => (l.id === editingLand.id ? updated : l)));
+    // Synchronize opportunityTitle on existing documents
+    setDocuments(
+      documents.map((d) =>
+        d.opportunityId === editingLand.id
+          ? { ...d, opportunityTitle: updated.title }
+          : d
+      )
+    );
     if (selectedLandForScript?.id === editingLand.id) {
       setSelectedLandForScript(updated);
     }
     setEditingLand(null);
-    showToast(`💾 Alterações do terreno "${updated.title}" salvas com sucesso!`);
+    showToast(`💾 Alterações do terreno "${updated.title}" e documentos sincronizados!`);
   };
 
   const handleConfirmDeleteLand = () => {
@@ -505,11 +565,53 @@ export default function ExpansionModule() {
     const deletedTitle = landToDelete.title;
     const updatedLands = lands.filter((l) => l.id !== landToDelete.id);
     setLands(updatedLands);
+    // Remove associated documents for deleted land
+    setDocuments(documents.filter((d) => d.opportunityId !== landToDelete.id));
+
     if (selectedLandForScript?.id === landToDelete.id) {
       setSelectedLandForScript(updatedLands[0] || null);
     }
     setLandToDelete(null);
-    showToast(`🗑️ Terreno "${deletedTitle}" excluído com sucesso!`);
+    showToast(`🗑️ Terreno "${deletedTitle}" e seus documentos foram removidos!`);
+  };
+
+  // Manual Document Operations
+  const handleCreateDocument = () => {
+    const targetLandId = newDocForm.opportunityId || lands[0]?.id;
+    if (!targetLandId) {
+      showToast("⚠️ Cadastre ao menos um terreno antes de adicionar documentos.");
+      return;
+    }
+    const targetLand = lands.find((l) => l.id === targetLandId);
+    if (!targetLand) return;
+
+    const nowStr = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    const createdDoc: LandDocument = {
+      id: `doc-${Date.now()}`,
+      opportunityId: targetLand.id,
+      opportunityTitle: targetLand.title,
+      docType: newDocForm.docType,
+      status: newDocForm.status,
+      analysisSummary:
+        newDocForm.analysisSummary.trim() ||
+        `Item de auditagem registrado manualmente para "${targetLand.title}".`,
+      updatedAt: nowStr
+    };
+
+    setDocuments([createdDoc, ...documents]);
+    setShowAddDocModal(false);
+    setNewDocForm({
+      opportunityId: "",
+      docType: "MATRICULA_IMOVER",
+      status: "ANALISANDO",
+      analysisSummary: ""
+    });
+    showToast(`📄 Documento adicionado ao checklist de "${targetLand.title}"!`);
+  };
+
+  const handleDeleteDocument = (docId: string) => {
+    setDocuments(documents.filter((d) => d.id !== docId));
+    showToast("🗑️ Item do checklist documental removido!");
   };
 
   const handleRunDocAudit = async (doc: LandDocument) => {
@@ -1472,71 +1574,325 @@ export default function ExpansionModule() {
       )}
 
       {/* TAB 3: DOCUMENT AUDIT & DUE DILIGENCE */}
-      {activeTab === "DOCUMENTS" && (
-        <div className="space-y-6">
-          <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 space-y-2">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <FileCheck2 className="h-4 w-4 text-red-600" />
-              Auditoria de Informações Cadastrais e Documentais (Due Diligence IA)
-            </h3>
-            <p className="text-xs text-slate-500">
-              Checklist de auditoria de matrículas, certidões negativas, passivos fiscais e restrições ambientais dos terrenos captados.
-            </p>
-          </div>
+      {activeTab === "DOCUMENTS" && (() => {
+        const filteredDocs =
+          selectedDocLandFilter === "ALL"
+            ? documents
+            : documents.filter((d) => d.opportunityId === selectedDocLandFilter);
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 space-y-3"
-              >
-                <div className="flex justify-between items-start gap-2">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      {doc.opportunityTitle}
-                    </span>
-                    <h4 className="text-sm font-bold text-slate-900 mt-0.5">
-                      {doc.docType.replace(/_/g, " ")}
-                    </h4>
-                  </div>
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase border ${
-                      doc.status === "APROVADO"
-                        ? "bg-green-100 text-green-800 border-green-200"
-                        : doc.status === "ANALISANDO"
-                        ? "bg-blue-100 text-blue-800 border-blue-200"
-                        : "bg-amber-100 text-amber-900 border-amber-200 animate-pulse"
-                    }`}
+        const totalCount = filteredDocs.length;
+        const approvedCount = filteredDocs.filter((d) => d.status === "APROVADO").length;
+        const analyzingCount = filteredDocs.filter((d) => d.status === "ANALISANDO").length;
+        const alertCount = filteredDocs.filter((d) => d.status === "ALERTA").length;
+
+        const formatDocType = (type: string) => {
+          switch (type) {
+            case "MATRICULA_IMOVER":
+              return "Matrícula do Imóvel / Certidão de Propriedade";
+            case "CERTIDAO_IPTU":
+              return "Certidão Negativa de IPTU / Débitos Municipais";
+            case "CERTIDAO_PGFN_DEBITOS":
+              return "Passivos Fiscais / PGFN & Dívida Ativa";
+            case "DIRETRIZES_ZONEAMENTO":
+              return "Diretrizes de Zoneamento & Uso do Solo";
+            case "ESTUDO_AMBIENTAL":
+              return "Estudo de Impacto & Licenciamento Ambiental";
+            case "TOMBAMENTO_PATRIMONIO":
+              return "Tombamento & Restrições de Patrimônio";
+            default:
+              return type.replace(/_/g, " ");
+          }
+        };
+
+        return (
+          <div className="space-y-6">
+            {/* Header and Filter Controls */}
+            <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <FileCheck2 className="h-4 w-4 text-red-600" />
+                    Auditoria de Informações Cadastrais e Documentais (Due Diligence IA)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Checklist de auditoria de matrículas, certidões negativas, passivos fiscais e restrições ambientais dos terrenos captados.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setNewDocForm({
+                      opportunityId: selectedDocLandFilter !== "ALL" ? selectedDocLandFilter : lands[0]?.id || "",
+                      docType: "MATRICULA_IMOVER",
+                      status: "ANALISANDO",
+                      analysisSummary: ""
+                    });
+                    setShowAddDocModal(true);
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shrink-0 self-start md:self-auto"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Adicionar Documento / Certidão</span>
+                </button>
+              </div>
+
+              {/* Terreno Filter Dropdown */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <label className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                    Filtrar por Terreno:
+                  </label>
+                  <select
+                    value={selectedDocLandFilter}
+                    onChange={(e) => setSelectedDocLandFilter(e.target.value)}
+                    className="w-full sm:w-72 p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
                   >
-                    {doc.status}
+                    <option value="ALL">
+                      Todos os Terrenos Captados ({documents.length} itens no total)
+                    </option>
+                    {lands.map((land) => {
+                      const docCountForLand = documents.filter((d) => d.opportunityId === land.id).length;
+                      return (
+                        <option key={land.id} value={land.id}>
+                          {land.title} ({docCountForLand} doc(s))
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Stat Badges */}
+                <div className="flex items-center gap-2 text-[11px] font-bold flex-wrap">
+                  <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
+                    Total: {totalCount}
                   </span>
-                </div>
-
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
-                  <span className="font-bold text-slate-800 block mb-1">Parecer da Auditoria:</span>
-                  {doc.analysisSummary}
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                  <span className="text-slate-400 text-[10px]">Verificado: {doc.updatedAt}</span>
-                  <button
-                    onClick={() => handleRunDocAudit(doc)}
-                    disabled={auditingDocId === doc.id}
-                    className="text-red-700 font-bold hover:underline flex items-center gap-1 text-xs"
-                  >
-                    {auditingDocId === doc.id ? (
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                    )}
-                    <span>Re-auditar com IA</span>
-                  </button>
+                  <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    Aprovados: {approvedCount}
+                  </span>
+                  <span className="bg-blue-50 text-blue-800 px-2.5 py-1 rounded-lg border border-blue-200">
+                    Em Análise: {analyzingCount}
+                  </span>
+                  {alertCount > 0 && (
+                    <span className="bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200 animate-pulse">
+                      Alertas: {alertCount}
+                    </span>
+                  )}
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Document Checklist Grid */}
+            {filteredDocs.length === 0 ? (
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-3">
+                <FileCheck2 className="h-10 w-10 text-slate-300 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-700">
+                  Nenhum documento encontrado no checklist
+                </h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Cadastre um novo terreno na aba "Captação & Proprietários" para gerar a auditoria automática ou adicione um documento manualmente.
+                </p>
+                <button
+                  onClick={() => {
+                    setNewDocForm({
+                      opportunityId: lands[0]?.id || "",
+                      docType: "MATRICULA_IMOVER",
+                      status: "ANALISANDO",
+                      analysisSummary: ""
+                    });
+                    setShowAddDocModal(true);
+                  }}
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-xl transition"
+                >
+                  + Adicionar Documento
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredDocs.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 hover:border-slate-300 transition space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <span className="text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-md border border-red-100 block w-fit mb-1">
+                            📍 {doc.opportunityTitle}
+                          </span>
+                          <h4 className="text-sm font-bold text-slate-900 mt-0.5">
+                            {formatDocType(doc.docType)}
+                          </h4>
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase border shrink-0 ${
+                            doc.status === "APROVADO"
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : doc.status === "ANALISANDO"
+                              ? "bg-blue-100 text-blue-800 border-blue-200"
+                              : "bg-amber-100 text-amber-900 border-amber-200 animate-pulse"
+                          }`}
+                        >
+                          {doc.status}
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                        <span className="font-bold text-slate-800 block mb-1">
+                          Parecer da Auditoria / Status:
+                        </span>
+                        {doc.analysisSummary}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-3">
+                      <span className="text-slate-400 text-[10px]">Verificado em: {doc.updatedAt}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 transition"
+                          title="Excluir item do checklist"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRunDocAudit(doc)}
+                          disabled={auditingDocId === doc.id}
+                          className="text-red-700 font-bold hover:underline flex items-center gap-1 text-xs"
+                        >
+                          {auditingDocId === doc.id ? (
+                            <RefreshCw className="h-3.5 w-3.5 animate-spin text-red-600" />
+                          ) : (
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                          )}
+                          <span>Re-auditar com IA</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Modal: Adicionar Documento / Certidão Manual */}
+            {showAddDocModal && (
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                      <FileCheck2 className="h-5 w-5 text-red-600" />
+                      Adicionar Item ao Checklist Documental
+                    </h3>
+                    <button
+                      onClick={() => setShowAddDocModal(false)}
+                      className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Terreno Vinculado:
+                      </label>
+                      <select
+                        value={newDocForm.opportunityId}
+                        onChange={(e) =>
+                          setNewDocForm({ ...newDocForm, opportunityId: e.target.value })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium"
+                      >
+                        {lands.length === 0 && <option value="">Nenhum terreno cadastrado</option>}
+                        {lands.map((land) => (
+                          <option key={land.id} value={land.id}>
+                            {land.title} ({land.city})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="font-semibold text-slate-700 block mb-1">
+                          Tipo de Documento / Certidão:
+                        </label>
+                        <select
+                          value={newDocForm.docType}
+                          onChange={(e) =>
+                            setNewDocForm({
+                              ...newDocForm,
+                              docType: e.target.value as LandDocument["docType"]
+                            })
+                          }
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium"
+                        >
+                          <option value="MATRICULA_IMOVER">Matrícula do Imóvel</option>
+                          <option value="CERTIDAO_IPTU">Certidão IPTU / Municipal</option>
+                          <option value="CERTIDAO_PGFN_DEBITOS">Passivos Fiscais / PGFN</option>
+                          <option value="DIRETRIZES_ZONEAMENTO">Diretrizes de Zoneamento</option>
+                          <option value="ESTUDO_AMBIENTAL">Licenciamento Ambiental</option>
+                          <option value="TOMBAMENTO_PATRIMONIO">Restrições de Tombamento</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="font-semibold text-slate-700 block mb-1">
+                          Status Inicial:
+                        </label>
+                        <select
+                          value={newDocForm.status}
+                          onChange={(e) =>
+                            setNewDocForm({
+                              ...newDocForm,
+                              status: e.target.value as LandDocument["status"]
+                            })
+                          }
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium"
+                        >
+                          <option value="ANALISANDO">Em Análise</option>
+                          <option value="APROVADO">Aprovado</option>
+                          <option value="ALERTA">Alerta / Inconsistência</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Parecer / Observações do Auditor:
+                      </label>
+                      <textarea
+                        rows={3}
+                        placeholder="Descreva o parecer do parecerista, número da certidão ou pendências..."
+                        value={newDocForm.analysisSummary}
+                        onChange={(e) =>
+                          setNewDocForm({ ...newDocForm, analysisSummary: e.target.value })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex gap-2">
+                    <button
+                      onClick={() => setShowAddDocModal(false)}
+                      className="flex-1 py-2.5 px-3 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleCreateDocument}
+                      className="flex-1 py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-md"
+                    >
+                      <Check className="h-4 w-4" />
+                      <span>Salvar Documento</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 4: CRM PIPELINE & SPREADSHEET SYNC */}
       {activeTab === "CRM_SYNC" && (
