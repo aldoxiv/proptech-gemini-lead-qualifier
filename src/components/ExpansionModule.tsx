@@ -240,7 +240,11 @@ const INITIAL_SYNC_LOGS: CrmSyncLog[] = [
   }
 ];
 
-export default function ExpansionModule() {
+interface ExpansionModuleProps {
+  onOpenDocs?: () => void;
+}
+
+export default function ExpansionModule({ onOpenDocs }: ExpansionModuleProps = {}) {
   // Active Tab inside Expansion Module
   const [activeTab, setActiveTab] = useState<
     "REGIONS" | "LAND_FINDER" | "DOCUMENTS" | "CRM_SYNC" | "APPROACH_AI"
@@ -742,7 +746,17 @@ export default function ExpansionModule() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            {onOpenDocs && (
+              <button
+                onClick={onOpenDocs}
+                className="bg-indigo-600/90 hover:bg-indigo-600 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs transition shadow-md flex items-center gap-1.5 border border-indigo-400/30"
+                title="Abrir Manual Visual e Baixar PDF"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Manual (PDF)</span>
+              </button>
+            )}
             <button
               onClick={handleSyncCrm}
               disabled={isSyncing}

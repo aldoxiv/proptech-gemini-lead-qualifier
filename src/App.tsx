@@ -6,11 +6,13 @@ import {
   Users,
   Sparkles,
   Layers,
-  ArrowRight
+  ArrowRight,
+  FileText
 } from "lucide-react";
 import { ChatMessage, LeadProfile } from "./types";
 import LeadQualificationModule from "./components/LeadQualificationModule";
 import ExpansionModule from "./components/ExpansionModule";
+import DocumentationModal from "./components/DocumentationModal";
 
 export default function App() {
   // Top level active module state: "LEAD_QUALIFICATION" or "EXPANSION_INCORPORADORA"
@@ -25,6 +27,9 @@ export default function App() {
     } catch (e) {}
     return "EXPANSION_INCORPORADORA";
   });
+
+  // Documentation Modal state
+  const [showDocModal, setShowDocModal] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -361,37 +366,49 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
             </button>
           </div>
 
-          {/* Actions for Lead Module */}
-          {activeModule === "LEAD_QUALIFICATION" && (
-            <div className="flex gap-2 w-full md:w-auto">
-              <button
-                onClick={handleReset}
-                className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-3 py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Limpar Conversa
-              </button>
-              <button
-                onClick={downloadLeadTXT}
-                disabled={history.length === 0}
-                className={`flex-1 md:flex-initial flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition ${
-                  history.length === 0
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent"
-                    : "bg-teal-600 hover:bg-teal-700 text-white shadow-xs"
-                }`}
-              >
-                <Download className="h-3.5 w-3.5" />
-                Exportar Lead
-              </button>
-            </div>
-          )}
+          {/* Right Actions & Documentation Button */}
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+            <button
+              onClick={() => setShowDocModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-xl text-xs font-bold transition shadow-xs hover:shadow"
+              title="Visualizar manual e telas da plataforma em PDF"
+            >
+              <FileText className="h-4 w-4 text-indigo-600" />
+              <span>Manual & Telas (PDF)</span>
+            </button>
+
+            {/* Actions for Lead Module */}
+            {activeModule === "LEAD_QUALIFICATION" && (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleReset}
+                  className="flex items-center justify-center gap-2 px-3 py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold transition"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Limpar Conversa
+                </button>
+                <button
+                  onClick={downloadLeadTXT}
+                  disabled={history.length === 0}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                    history.length === 0
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-transparent"
+                      : "bg-teal-600 hover:bg-teal-700 text-white shadow-xs"
+                  }`}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Exportar Lead
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
       {/* MAIN CONTAINER */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
         {activeModule === "EXPANSION_INCORPORADORA" ? (
-          <ExpansionModule />
+          <ExpansionModule onOpenDocs={() => setShowDocModal(true)} />
         ) : (
           <LeadQualificationModule
             agentName={agentName}
@@ -418,9 +435,16 @@ ${history.map((m) => `${m.role === "user" ? "CLIENTE" : "ASSISTENTE"}: ${m.text}
             showResetConfirm={showResetConfirm}
             setShowResetConfirm={setShowResetConfirm}
             hasPositiveStart={hasPositiveStart}
+            onOpenDocs={() => setShowDocModal(true)}
           />
         )}
       </main>
+
+      {/* DOCUMENTATION MODAL / PDF EXPORT */}
+      <DocumentationModal
+        isOpen={showDocModal}
+        onClose={() => setShowDocModal(false)}
+      />
 
       {/* FOOTER */}
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">

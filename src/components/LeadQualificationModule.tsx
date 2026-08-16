@@ -13,7 +13,8 @@ import {
   Info,
   RefreshCw,
   LogOut,
-  Sparkles
+  Sparkles,
+  FileText
 } from "lucide-react";
 import { ChatMessage, LeadProfile } from "../types";
 
@@ -42,6 +43,7 @@ interface LeadQualificationModuleProps {
   showResetConfirm: boolean;
   setShowResetConfirm: (val: boolean) => void;
   hasPositiveStart: boolean;
+  onOpenDocs?: () => void;
 }
 
 export default function LeadQualificationModule({
@@ -69,6 +71,7 @@ export default function LeadQualificationModule({
   showResetConfirm,
   setShowResetConfirm,
   hasPositiveStart,
+  onOpenDocs,
 }: LeadQualificationModuleProps) {
   const isConcluido =
     leadProfile.status === "CONCLUIDO" ||
@@ -183,11 +186,13 @@ export default function LeadQualificationModule({
         </div>
 
         {/* Instructions Box */}
-        <div className="bg-slate-900 text-slate-200 p-5 rounded-2xl shadow-xs border border-slate-800 text-xs leading-relaxed space-y-2">
-          <h3 className="font-bold text-white flex items-center gap-1.5 text-sm">
-            <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
-            Como utilizar este Simulador:
-          </h3>
+        <div className="bg-slate-900 text-slate-200 p-5 rounded-2xl shadow-xs border border-slate-800 text-xs leading-relaxed space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-white flex items-center gap-1.5 text-sm">
+              <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+              Como utilizar este Simulador:
+            </h3>
+          </div>
           <ul className="list-disc list-inside space-y-1.5 text-slate-300 text-[11px]">
             <li>
               Inicie clicando em um dos <strong>Gatilhos Rápidos</strong> no topo do celular.
@@ -202,6 +207,16 @@ export default function LeadQualificationModule({
               Ao captar os dados vitais, o bot passa a bola para <strong className="text-red-400">{agentName}</strong>.
             </li>
           </ul>
+
+          {onOpenDocs && (
+            <button
+              onClick={onOpenDocs}
+              className="w-full mt-2 py-2 px-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md"
+            >
+              <FileText className="h-4 w-4" />
+              <span>Ver Manual Completo & Telas em PDF</span>
+            </button>
+          )}
         </div>
       </section>
 

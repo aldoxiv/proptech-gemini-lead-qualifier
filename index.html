@@ -1,9 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>proptech-IA Hub - Expansão & Qualificação Imobiliária</title>
+    <script>
+      // Guard against browser extension collisions (e.g. MetaMask / Web3 extensions attempting to redefine window.ethereum)
+      try {
+        if (typeof window !== 'undefined' && !('ethereum' in window)) {
+          let _eth;
+          Object.defineProperty(window, 'ethereum', {
+            get() { return _eth; },
+            set(v) { _eth = v; },
+            configurable: true,
+            enumerable: true
+          });
+        }
+      } catch (e) {
+        // Silently ignore extension injection property redefinition errors
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
